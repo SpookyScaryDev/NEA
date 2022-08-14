@@ -1,0 +1,13 @@
+# Directories
+.vs/
+compile_commands/
+
+Prototype/Binaries/
+Prototype/Intermediate/
+
+# Files
+compile_commands.json
+**.sln
+**.vcxproj
+**.user
+**.filters
