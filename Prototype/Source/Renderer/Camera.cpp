@@ -14,20 +14,20 @@ void Camera::Create(float aspectRatio, float focalLength, Vector3f pos) {
 	mFocalLength = focalLength;
 	position = pos;
 
-	mViewportVertical = { 0, -1, 0 };
+	mViewportVertical = { 0, 1, 0 };
 	mViewportHorizontal = { mAspectRatio, 0, 0 };
-	mViewportTopLeft = mViewportHorizontal / -2 - mViewportVertical / 2 + Vector3f(0, 0, mFocalLength);
+	mViewportBottomLeft = mViewportHorizontal / -2 - mViewportVertical / 2 + Vector3f(0, 0, -mFocalLength);
 }
 	
 Vector3f Camera::GetViewportPos(Vector2f screenPos) const {
-	Vector3f viewportPos = mViewportTopLeft + mViewportHorizontal * screenPos.x + mViewportVertical * screenPos.y - position;
+	Vector3f viewportPos = mViewportBottomLeft + mViewportHorizontal * screenPos.x + mViewportVertical * (1-screenPos.y) + position;
 	return viewportPos;
 }
 
 Vector2f Camera::GetScreenPos(Vector3f viewportPos) const {
 	Vector2f screenPos;
-	screenPos.x = (viewportPos.x - mViewportTopLeft.x + position.x) / mViewportHorizontal.x;
-	screenPos.y = (viewportPos.y - mViewportTopLeft.y + position.y) / mViewportVertical.y;
+	screenPos.x = (viewportPos.x - mViewportBottomLeft.x + position.x) / mViewportHorizontal.x;
+	screenPos.y = (viewportPos.y - mViewportBottomLeft.y + position.y) / mViewportVertical.y;
 	return screenPos;
 }
 

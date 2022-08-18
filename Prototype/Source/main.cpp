@@ -13,6 +13,7 @@
 #include <Maths/Vector3f.h>
 #include <Renderer/Texture.h>
 #include <Renderer/Camera.h>
+#include <Renderer/Sphere.h>
 
 using namespace Prototype;
 
@@ -23,12 +24,42 @@ public:
 
         GetRenderer()->SetClearColour({ 50, 50, 50 });
 
-        width = 500;
-        height = 500;
+        width = 250;
+        height = 250;
         aspectRatio = (float)width / (float)height;
-        image = new Texture(width, height);
+
+        image = new Colour *[width];
+        for (int i = 0; i < width; i++) {
+            image[i] = new Colour[height];
+        }
 
         Camera camera = Camera(aspectRatio, 1, { 0, 0, 0 });
+
+        renderSettings = RenderSettings();
+        renderSettings.resolution = { (float)width, (float)height };
+        renderSettings.maxDepth = 10;
+        renderSettings.samples = 1;
+        //renderSettings.ambientLight = Vector3f(150, 150, 255) / 255 / 4;
+        //renderSettings.ambientLight = Vector3f(0.5, 0.5, 0.5);
+        renderSettings.ambientLight = Vector3f();
+
+
+        Material mat1 = Material(MaterialType::Lambertian, { 0, 1, 0 });
+        Material mat2 = Material(MaterialType::Lambertian, { 1, 0, 0 });
+        Material mat3 = Material(MaterialType::Lambertian, { 0, 0, 1 });
+        Material mat4 = Material(MaterialType::Lambertian, { 0.5, 0.5, 0.5 });
+        Material mat5 = Material(MaterialType::Lambertian, { 1, 1, 1 }, { 50, 50, 50});
+
+        light = (Object*) new Sphere({ 0, 2, -10 }, 0.25, mat5);
+
+        scene.SetCamera(camera);
+        scene.AddObject((Object*) new Sphere({ -2, 1-2, -10 }, 1, mat1));
+        scene.AddObject((Object*) new Sphere({ 0, 1- 2, -10 }, 1, mat2));
+        scene.AddObject((Object*) new Sphere({ 2, 1- 2, -10 }, 1, mat3));
+        scene.AddObject((Object*) new Sphere({ 0, -1000 - 2, -10 }, 1000, mat4));
+        scene.AddObject(light);
+
+        finalImage = new Texture(width, height);
     }
 
     void SetUpImGui() {
@@ -79,7 +110,7 @@ public:
 
         {
             ImGui::Begin("Scene");
-            float scale = 1;
+            float scale = 2;
 
             SDL_Point size;
             SDL_QueryTexture(finalImage->GetRawTexture(), NULL, NULL, &size.x, &size.y);
@@ -87,7 +118,7 @@ public:
             ImGui::GetWindowDrawList()->AddImage(
                 (void*)finalImage->GetRawTexture(),
                 ImVec2(ImGui::GetCursorScreenPos()),
-                ImVec2((int)(ImGui::GetCursorScreenPos().x + size.x * scale), (int)(ImGui::GetCursorScreenPos().y + size.y * scale)), ImVec2(1, 0), ImVec2(0, 1));
+                ImVec2((int)(ImGui::GetCursorScreenPos().x + size.x * scale), (int)(ImGui::GetCursorScreenPos().y + size.y * scale)));
 
             ImGui::SetCursorPosY((size.y * scale + 50));
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -101,10 +132,25 @@ public:
     }
 
     void Update(float deltaTime) {
+        frame++;
 
-        finalImage = new Texture(width, height);
-        finalImage = GetRenderer()->RenderScene(finalImage);
-        SDL_SetTextureScaleMode(finalImage->GetRawTexture(), SDL_ScaleMode::SDL_ScaleModeLinear);
+        //light->position.x += 0.05;
+
+        image = GetRenderer()->RenderScene(scene, image, renderSettings, frame);
+        //finalImage = new Texture(width, height);
+
+        //image->Lock();
+        finalImage->Lock();
+        for (int y = 0; y < renderSettings.resolution.y; y++) {
+            for (int x = 0; x < renderSettings.resolution.x; x++) {
+                Colour colour = image[x][y];
+                finalImage->SetColourAt({ (float)x, (float)y }, colour * 255);
+            }
+        }
+        finalImage->Unlock();
+        //image->Unlock();
+
+        //SDL_SetTextureScaleMode(finalImage->GetRawTexture(), SDL_ScaleMode::SDL_ScaleModeNearest);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -119,18 +165,24 @@ public:
         GetRenderer()->Clear();
         UpdateImGui();
 
-
-        delete finalImage;
-
+        //delete finalImage;
     }
 
 private:
-    Texture* image;
+    Colour** image;
     Texture* finalImage;
+
+    RenderSettings renderSettings;
+
+    Scene scene;
 
     int width;
     int height;
     float aspectRatio;
+
+    int frame = 0;
+
+    Object* light;
 };
 
 int main(int, char**) {
