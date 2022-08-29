@@ -12,7 +12,6 @@ namespace Prototype {
 class Texture {
 public:
                        Texture(int width, int height);
-                       Texture(const std::string& filePath);
                        Texture(SDL_Texture* texture);
                        ~Texture();
 
@@ -20,14 +19,13 @@ public:
     int                GetWidth() const;
     int                GetHeight() const;
 
-    void               Unlock();
-    void               Lock();
+    void               Unlock(); // Allow editing.
+    void               Lock();   // Apply changes.
 
-    Vector3f           GetColourAt(const Point2f& position);
-    void               SetColourAt(const Point2f& position, const Colour& colour);
+    Vector3f           GetColourAt(const Vector2f& position);
+    void               SetColourAt(const Vector2f& position, const Colour& colour);
 
 private:
-    std::string        mFilePath;
     SDL_Texture*       mTextureData;
     void*              mPixelData;
     SDL_PixelFormat*   mPixelFormat;

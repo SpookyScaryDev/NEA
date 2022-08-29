@@ -7,6 +7,7 @@
 
 namespace Prototype {
 
+// A scene owns a set of objects and a camera.
 class Scene {
 public:
                            Scene();

@@ -89,6 +89,14 @@ Vector3f& Vector3f::operator/=(float scalar) {
     return *this;
 }
 
+bool Vector3f::operator==(const Vector3f& vector) const {
+    return x == vector.x && y == vector.y && z == vector.z;
+}
+
+bool Vector3f::operator!=(const Vector3f& vector) const {
+    return !(*this == vector);
+}
+
 Vector3f operator*(const float scalar, const Vector3f& vector) {
     return vector * scalar;
 }

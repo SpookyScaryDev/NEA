@@ -73,6 +73,14 @@ Vector2f& Vector2f::operator/=(float scalar) {
     return *this;
 }
 
+bool Vector2f::operator==(const Vector2f& vector) const {
+    return x == vector.x && y == vector.y;
+}
+
+bool Vector2f::operator!=(const Vector2f& vector) const {
+    return !(*this == vector);
+}
+
 Vector2f operator*(const float scalar, const Vector2f& vector) {
     return vector * scalar;
 }

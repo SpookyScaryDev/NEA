@@ -14,8 +14,8 @@ void Camera::Create(float aspectRatio, float focalLength, Vector3f pos) {
 	mFocalLength = focalLength;
 	position = pos;
 
-	mViewportVertical = { 0, 1, 0 };
-	mViewportHorizontal = { mAspectRatio, 0, 0 };
+	mViewportVertical = { 0, 2, 0 };
+	mViewportHorizontal = { 2 * mAspectRatio, 0, 0 };
 	mViewportBottomLeft = mViewportHorizontal / -2 - mViewportVertical / 2 + Vector3f(0, 0, -mFocalLength);
 }
 	

@@ -5,6 +5,8 @@
 #include <SDL.h>
 #include <chrono>
 
+#include <Error.h>;
+
 namespace Prototype {
 
 Application* Application::mApplication = nullptr;
@@ -12,8 +14,9 @@ Application* Application::mApplication = nullptr;
 Application::Application(const char* name, int width, int height) {
     // Initialize singleton.
     if (mApplication != nullptr) {
-        //JEM_CORE_ERROR("Application already exists. You can only create 1 Application");
+        ERROR("Application already exists. You can only create 1 Application");
     }
+
     mApplication = this;
     mIsRunning = true;
 
@@ -41,7 +44,7 @@ void Application::Init(const char* name, int width, int height) {
 
     printf("SDL_Init: Initializing SDL2\n");
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-        // JEM_CORE_ERROR("SDL_Init: Failed to initialize SDL2 - ", SDL_GetError());
+        ERROR("SDL_Init: Failed to initialize SDL2 - ", SDL_GetError());
     }
 
     printf("InitWindow: Creating Window\n");
@@ -67,6 +70,10 @@ Window* Application::GetWindow() const {
 
 Renderer* Application::GetRenderer() const {
     return mRenderer;
+}
+
+void Application::Error(const std::string message) {
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Whoops!", message.c_str(), mWindow->GetRawWindow());
 }
 
 void Application::Run() {

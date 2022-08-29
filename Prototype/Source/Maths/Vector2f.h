@@ -25,13 +25,14 @@ public:
     Vector2f            operator/(const float scalar)     const;
     Vector2f&           operator/=(float scalar);
 
+    bool                operator==(const Vector2f& vector)  const;
+    bool                operator!=(const Vector2f& vector)  const;
+
     float               x;
     float               y;
 };
 
 Vector2f     operator*(const float scalar, const Vector2f& vector);
 Vector2f     operator/(const float scalar, const Vector2f& vector);
-
-typedef Vector2f Point2f;
 
 }

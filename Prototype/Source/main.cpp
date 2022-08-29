@@ -15,6 +15,8 @@
 #include <Renderer/Camera.h>
 #include <Renderer/Sphere.h>
 
+#include <Error.h>
+
 using namespace Prototype;
 
 class PrototypeApp : public Application {
@@ -22,47 +24,81 @@ public:
     PrototypeApp() : Application("Prototype", 1100, 720) {
         SetUpImGui();
 
-        GetRenderer()->SetClearColour({ 50, 50, 50 });
-
-        width = 250;
-        height = 250;
+        width = 300;
+        height = 225;
         aspectRatio = (float)width / (float)height;
 
+        // Need to use an array as texture data wraps around after 255!
         image = new Colour *[width];
         for (int i = 0; i < width; i++) {
             image[i] = new Colour[height];
         }
 
-        Camera camera = Camera(aspectRatio, 1, { 0, 0, 0 });
-
         renderSettings = RenderSettings();
         renderSettings.resolution = { (float)width, (float)height };
-        renderSettings.maxDepth = 10;
+        renderSettings.maxDepth = 2;
         renderSettings.samples = 1;
-        //renderSettings.ambientLight = Vector3f(150, 150, 255) / 255 / 4;
-        //renderSettings.ambientLight = Vector3f(0.5, 0.5, 0.5);
-        renderSettings.ambientLight = Vector3f();
+        renderSettings.ambientLight = Vector3f(0, 0, 0);
 
+        ambientLightColour = { renderSettings.ambientLight.x, renderSettings.ambientLight.y, renderSettings.ambientLight.z, 1 };
 
-        Material mat1 = Material(MaterialType::Lambertian, { 0, 1, 0 });
-        Material mat2 = Material(MaterialType::Lambertian, { 1, 0, 0 });
-        Material mat3 = Material(MaterialType::Lambertian, { 0, 0, 1 });
-        Material mat4 = Material(MaterialType::Lambertian, { 0.5, 0.5, 0.5 });
-        Material mat5 = Material(MaterialType::Lambertian, { 1, 1, 1 }, { 50, 50, 50});
+        redraw = false;
 
-        light = (Object*) new Sphere({ 0, 2, -10 }, 0.25, mat5);
+        // The image which will be rendered on the GUI.
+        finalImage = new Texture(width, height);
+
+        GenerateScene();
+    }
+
+    void GenerateScene() {
+        // Generate a test scene.
+        srand(2);
+        for (float i = -1; i <= 1; i += 1) {
+            for (float j = -1; j <= 1; j += 1) {
+                Material mat;
+                switch (rand() % 4) {
+                case 0:
+                    mat = Material(MaterialType::Lambertian, { rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) } );
+                    break;
+
+                case 1:
+                    mat = Material(MaterialType::Glossy, { rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) }, rand() / (RAND_MAX + 1.0f));
+                    break;
+
+                case 2:
+                    mat = Material(MaterialType::Glass, { rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) }, 0, 1.5);
+                    break;
+
+                default:
+                    break;
+                }
+
+                float size = (rand() / (RAND_MAX + 1.0)) * 0.1 + 0.07;
+                if (!(i == 0 && j == 0))
+                    scene.AddObject((Object*) new Sphere({ i * 0.7f, size, j * 0.7f - 2 }, size, mat));
+            }
+        }
+
+        Material ground = Material(MaterialType::Lambertian, { 0.5, 0.5, 0.5 });
+        Material metal  = Material(MaterialType::Glossy,     { 0.8, 0.8, 0.8 }, 0);
+        Material glass  = Material(MaterialType::Glass,      { 1.0, 1.0, 1.0 }, 0, 1.5);
+
+        Material light = Material(MaterialType::Lambertian, { 1, 1, 1 }, 1, 1, { 100, 100, 100 });
+
+        scene.AddObject((Object*)new Sphere({ 1.6,  0.35, -2 },   0.35, metal));
+        scene.AddObject((Object*)new Sphere({   0,   0.5, -2 },    0.5, glass));
+
+        scene.AddObject((Object*)new Sphere({   0,   1.5, -2 },    0.15, light));
+
+        Camera camera = Camera(aspectRatio, 1.2, { 0.1,  0.4, -0.2 });
 
         scene.SetCamera(camera);
-        scene.AddObject((Object*) new Sphere({ -2, 1-2, -10 }, 1, mat1));
-        scene.AddObject((Object*) new Sphere({ 0, 1- 2, -10 }, 1, mat2));
-        scene.AddObject((Object*) new Sphere({ 2, 1- 2, -10 }, 1, mat3));
-        scene.AddObject((Object*) new Sphere({ 0, -1000 - 2, -10 }, 1000, mat4));
-        scene.AddObject(light);
-
-        finalImage = new Texture(width, height);
+        scene.AddObject((Object*) new Sphere({ 0, -1000, -2 }, 1000, ground));
     }
 
     void SetUpImGui() {
+        // Set up taken from https://github.com/ocornut/imgui/blob/master/examples/example_sdl_sdlrenderer/main.cpp
+
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -78,25 +114,9 @@ public:
         // Setup Platform/Renderer backends
         ImGui_ImplSDL2_InitForSDLRenderer(GetWindow()->GetRawWindow(), GetRenderer()->GetRawRenderer());
         ImGui_ImplSDLRenderer_Init(GetRenderer()->GetRawRenderer());
-
-        // Load Fonts
-        // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-        // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-        // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-        // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-        // - Read 'docs/FONTS.md' for more instructions and details.
-        // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a float backslash \\ !
-        //io.Fonts->AddFontDefault();
-        //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-        //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-        //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-        //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-        //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-        //IM_ASSERT(font != NULL);
     }
 
     void UpdateImGui() {
-        // Start the Dear ImGui frame
         ImGui_ImplSDLRenderer_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -109,8 +129,23 @@ public:
         }
 
         {
+            ImGui::Begin("Renderer Settings");
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
+
+            if (ImGui::CollapsingHeader("Preview Render Settings", 32)) {
+                redraw |= ImGui::SliderInt("Max Depth", &renderSettings.maxDepth, 1, 100);
+                redraw |= ImGui::SliderInt("Samples Per Frame", &renderSettings.samples, 1, 100);
+                redraw |= ImGui::ColorEdit3("Ambient Light Colour", (float*)&ambientLightColour);
+
+                renderSettings.ambientLight = Vector3f(ambientLightColour.x, ambientLightColour.y, ambientLightColour.z);
+            }
+
+            ImGui::End();
+        }
+
+        {
             ImGui::Begin("Scene");
-            float scale = 2;
+            float scale = 1;
 
             SDL_Point size;
             SDL_QueryTexture(finalImage->GetRawTexture(), NULL, NULL, &size.x, &size.y);
@@ -121,7 +156,7 @@ public:
                 ImVec2((int)(ImGui::GetCursorScreenPos().x + size.x * scale), (int)(ImGui::GetCursorScreenPos().y + size.y * scale)));
 
             ImGui::SetCursorPosY((size.y * scale + 50));
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
             ImGui::End();
         }
@@ -132,14 +167,13 @@ public:
     }
 
     void Update(float deltaTime) {
+        if (redraw) frame = 0;
+        redraw = false;
         frame++;
 
-        //light->position.x += 0.05;
-
         image = GetRenderer()->RenderScene(scene, image, renderSettings, frame);
-        //finalImage = new Texture(width, height);
 
-        //image->Lock();
+        // Prepare image texture for rendering.
         finalImage->Lock();
         for (int y = 0; y < renderSettings.resolution.y; y++) {
             for (int x = 0; x < renderSettings.resolution.x; x++) {
@@ -148,9 +182,6 @@ public:
             }
         }
         finalImage->Unlock();
-        //image->Unlock();
-
-        //SDL_SetTextureScaleMode(finalImage->GetRawTexture(), SDL_ScaleMode::SDL_ScaleModeNearest);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -164,13 +195,11 @@ public:
 
         GetRenderer()->Clear();
         UpdateImGui();
-
-        //delete finalImage;
     }
 
 private:
-    Colour** image;
-    Texture* finalImage;
+    Colour** image;       // The image generated by the renderer.
+    Texture* finalImage;  // The image which will be drawn.
 
     RenderSettings renderSettings;
 
@@ -180,9 +209,10 @@ private:
     int height;
     float aspectRatio;
 
-    int frame = 0;
+    int frame = 0;        // Frame referes to the number of frames that nothing has changed, used for temporal anti-aliasing.
 
-    Object* light;
+    bool redraw;
+    ImVec4 ambientLightColour;
 };
 
 int main(int, char**) {

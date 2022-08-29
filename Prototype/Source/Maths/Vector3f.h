@@ -26,15 +26,17 @@ public:
     Vector3f            operator/(const float scalar)      const;
     Vector3f&           operator/=(float scalar);
 
-    float              x;
-    float              y;
-    float              z;
+    bool                operator==(const Vector3f& vector)  const;
+    bool                operator!=(const Vector3f& vector)  const;
+
+    float           x;
+    float           y;
+    float           z;
 };
 
 Vector3f     operator*(const float scalar, const Vector3f& vector);
 Vector3f     operator/(const float scalar, const Vector3f& vector);
 
 typedef Vector3f Colour;
-typedef Vector3f Point3f;
-    
+
 }

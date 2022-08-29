@@ -2,6 +2,8 @@
 
 #include <SDL.h>
 
+#include <Error.h>
+
 namespace Prototype {
 
 Window::Window() {
@@ -21,9 +23,7 @@ void Window::Init(const char* name, int width, int height) {
     );
 
     if (mRawSDLWindow == nullptr) {
-        // TODO! 
-        // The window could not be created.
-        //JEM_CORE_ERROR("InitWindow: Failed to create window - ", SDL_GetError());
+        ERROR(std::string("Failed to create window - ") + SDL_GetError());
     }
 }
 
