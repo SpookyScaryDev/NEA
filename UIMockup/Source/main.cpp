@@ -187,6 +187,14 @@ int main(int, char**)
         }
 
         {
+            ImGui::SetNextWindowBgAlpha(0.35f);
+            ImGui::Begin("Example: Simple overlay", (bool*)1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
+            ImGui::Text("Renderer API: OpenGL");
+            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::End();
+        }
+
+        {
             ImGui::Begin("Objects", (bool*)1);
 
             for (int n = 0; n < 5; n++)
