@@ -13,3 +13,4 @@ workspace "NEA"
     }
 
 include "Prototype/premake5.lua"
+include "UIMockup/premake5.lua"

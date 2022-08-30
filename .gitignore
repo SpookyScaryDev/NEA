@@ -5,6 +5,9 @@ compile_commands/
 Prototype/Binaries/
 Prototype/Intermediate/
 
+UIMockup/Binaries/
+UIMockup/Intermediate/
+
 # Files
 compile_commands.json
 **.sln
