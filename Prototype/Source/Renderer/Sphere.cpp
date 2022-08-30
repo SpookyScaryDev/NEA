@@ -12,8 +12,8 @@ Sphere::Sphere(Vector3f position, float radius, Material material) :
 bool Sphere::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
 	float a = ray.GetDirection().Dot(ray.GetDirection());
 	float b = 2.0 * ray.GetDirection().Dot(ray.GetOrigin() - position);
-	float c = (ray.GetOrigin() - position).Dot((ray.GetOrigin() - position)) - pow(radius, 2.0);
-	float d = pow(b, 2) - 4.0 * a * c;
+	float c = (ray.GetOrigin() - position).Dot((ray.GetOrigin() - position)) - radius * radius;
+	float d = b * b - 4.0 * a * c;
 
 	if (d >= 0) {
 		float t = (-b - sqrt(d)) / (2.0 * a);
@@ -21,7 +21,7 @@ bool Sphere::Intersect(const Ray& ray, float min, float max, RayPayload& payload
 			payload.t = t;
 			payload.point = ray.GetPointAt(payload.t);
 			payload.normal = position - payload.point;
-			payload.normal.Normalize();
+			payload.normal.Normalize();	
 			payload.frontFace = payload.normal.Dot(ray.GetDirection()) < 0 ? false : true;
 			payload.material = &material;
 			payload.object = this;
