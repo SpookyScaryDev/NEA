@@ -36,9 +36,9 @@ public:
 
         renderSettings = RenderSettings();
         renderSettings.resolution = { (float)width, (float)height };
-        renderSettings.maxDepth = 2;
+        renderSettings.maxDepth = 10;
         renderSettings.samples = 1;
-        renderSettings.ambientLight = Vector3f(0, 0, 0);
+        renderSettings.ambientLight = Vector3f(1, 1, 1);
 
         ambientLightColour = { renderSettings.ambientLight.x, renderSettings.ambientLight.y, renderSettings.ambientLight.z, 1 };
 
@@ -53,20 +53,20 @@ public:
     void GenerateScene() {
         // Generate a test scene.
         srand(2);
-        for (float i = -1; i <= 1; i += 1) {
-            for (float j = -1; j <= 1; j += 1) {
+        for (int i = -1; i <= 1; i += 1) {
+            for (int j = -1; j <= 1; j += 1) {
                 Material mat;
                 switch (rand() % 4) {
                 case 0:
-                    mat = Material(MaterialType::Lambertian, { rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) } );
+                    mat = Material(MaterialType::Lambertian, { rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f , rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f, rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f } );
                     break;
 
                 case 1:
-                    mat = Material(MaterialType::Glossy, { rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) }, rand() / (RAND_MAX + 1.0f));
+                    mat = Material(MaterialType::Glossy, { rand() / (RAND_MAX + 1.0f * 0.9f + 0.1f) , rand() / (RAND_MAX + 1.0f * 0.9f + 0.1f) , rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f }, rand() / (RAND_MAX + 1.0f));
                     break;
 
                 case 2:
-                    mat = Material(MaterialType::Glass, { rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) , rand() / (RAND_MAX + 1.0f) }, 0, 1.5);
+                    mat = Material(MaterialType::Glass, { rand() / (RAND_MAX + 1.0f * 0.9f + 0.1f) , rand() / (RAND_MAX + 1.0f * 0.9f + 0.1f) , rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f }, 0, 1.5);
                     break;
 
                 default:
@@ -74,26 +74,27 @@ public:
                 }
 
                 float size = (rand() / (RAND_MAX + 1.0)) * 0.1 + 0.07;
+                float yPos = size;
                 if (!(i == 0 && j == 0))
-                    scene.AddObject((Object*) new Sphere({ i * 0.7f, size, j * 0.7f - 2 }, size, mat));
+                    scene.AddObject((Object*) new Sphere({ i * 0.7f, yPos, j * 0.7f - 2 }, size, mat));
             }
         }
 
         Material ground = Material(MaterialType::Lambertian, { 0.5, 0.5, 0.5 });
         Material metal  = Material(MaterialType::Glossy,     { 0.8, 0.8, 0.8 }, 0);
-        Material glass  = Material(MaterialType::Glass,      { 1.0, 1.0, 1.0 }, 0, 1.5);
+        Material glass  = Material(MaterialType::Glass,      { 1.0, 1.0, 1.0 }, 0, 1.44);
 
         Material light = Material(MaterialType::Lambertian, { 1, 1, 1 }, 1, 1, { 100, 100, 100 });
 
-        scene.AddObject((Object*)new Sphere({ 1.6,  0.35, -2 },   0.35, metal));
-        scene.AddObject((Object*)new Sphere({   0,   0.5, -2 },    0.5, glass));
+        scene.AddObject((Object*)new Sphere({ 1.6, 0.35, -2 }, 0.35, metal));
+        scene.AddObject((Object*)new Sphere({ 0, 0.375, -2 }, -0.375, glass));
 
-        scene.AddObject((Object*)new Sphere({   0,   1.5, -2 },    0.15, light));
+        //scene.AddObject((Object*)new Sphere({   0,   1.5, -2 },    0.15, light));
 
-        Camera camera = Camera(aspectRatio, 1.2, { 0.1,  0.4, -0.2 });
+        Camera camera = Camera(aspectRatio, 1.2, { 0.1,  0.4, -0.1 });
 
         scene.SetCamera(camera);
-        scene.AddObject((Object*) new Sphere({ 0, -1000, -2 }, 1000, ground));
+        scene.AddObject((Object*) new Sphere({ 0, -5000, -2 }, 5000, ground));
     }
 
     void SetUpImGui() {
@@ -145,7 +146,7 @@ public:
 
         {
             ImGui::Begin("Scene");
-            float scale = 1;
+            float scale = 2;
 
             SDL_Point size;
             SDL_QueryTexture(finalImage->GetRawTexture(), NULL, NULL, &size.x, &size.y);
