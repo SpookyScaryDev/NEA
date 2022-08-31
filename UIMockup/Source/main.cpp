@@ -13,9 +13,60 @@
 #include <stdio.h>
 #include <SDL.h>
 
+#include <string>
+#include <vector>
+
 #if !SDL_VERSION_ATLEAST(2,0,17)
 #error This backend requires SDL 2.0.17+ because of SDL_RenderGeometry() function
 #endif
+
+enum class MaterialType {
+    Lambertian,
+    Specular,
+    Glass
+};
+
+struct Material {
+    MaterialType type       = MaterialType::Lambertian;
+    ImVec4       colour     = ImVec4(0.5, 0.8, 0.5, 0);
+    float        albedo     = 0.5;
+    float        roughness  = 1;
+    float        ir         = 1.44;
+};
+
+struct Object {
+    std::string name;
+    int         id;
+    bool        show;
+    ImVec4      position;
+    ImVec4      rotation;
+    Material    material;
+};
+
+struct RenderSettings {
+    int         depth       = 10;
+    int         samples     = 1;
+    ImVec4      ambient     = { 0.8, 0.8, 1, 0 };
+};
+
+Object GenerateRandomObject(int id) {
+    Material material;
+    material.type = (MaterialType)(rand() % 4 - 1);
+    material.albedo = rand() / (RAND_MAX + 1.0);
+    material.ir = rand() / (RAND_MAX + 1.0) + 1;
+    material.roughness = rand() / (RAND_MAX + 1.0);
+    material.colour = { (rand() % 255) / 255.0f, (rand() % 255) / 255.0f , (rand() % 255) / 255.0f , 1 };
+
+    Object object;
+    object.id = id;
+    object.name = std::string("Sphere ") + std::to_string(id + 1);
+    object.position = { rand() / (RAND_MAX + 1) * 10.0f - 5, rand() / (RAND_MAX + 1) * 10.0f - 5 , rand() / (RAND_MAX + 1) * 10.0f - 5, 0 };
+    object.rotation = { (float)(rand() % 360), (float)(rand() % 360), (float)(rand() % 360), 0 };
+    object.show = (bool)rand() % 2;
+    object.material = material;
+
+    return object;
+}
 
 void SetupImGuiStyle(bool bStyleDark_, float alpha_)
 {
@@ -30,19 +81,34 @@ void SetupImGuiStyle(bool bStyleDark_, float alpha_)
         ImGui::StyleColorsLight();
     }
 
-    for (int i = 0; i <= ImGuiCol_COUNT; i++)
-    {
-        ImGuiCol_ ei = (ImGuiCol_)i;
-        ImVec4& col = style.Colors[i];
-        if ((ImGuiCol_ModalWindowDimBg != ei) &&
-            (ImGuiCol_NavWindowingDimBg != ei) &&
-            (col.w < 1.00f || (ImGuiCol_FrameBg == ei)
-                || (ImGuiCol_WindowBg == ei)
-                || (ImGuiCol_ChildBg == ei)))
+    if (bStyleDark_) {
+        for (int i = 0; i <= ImGuiCol_COUNT; i++)
         {
-            col.x = alpha_ * col.x;
-            col.y = alpha_ * col.y;
-            col.z = alpha_ * col.z;
+            ImGuiCol_ ei = (ImGuiCol_)i;
+            ImVec4& col = style.Colors[i];
+            if (ImGuiCol_WindowBg == ei || ImGuiCol_TitleBg == ei)
+            {
+                col.x = 3 * col.x;
+                col.y = 3 * col.y;
+                col.z = 3 * col.z;
+            }
+        }
+    }
+    else {
+        for (int i = 0; i <= ImGuiCol_COUNT; i++)
+        {
+            ImGuiCol_ ei = (ImGuiCol_)i;
+            ImVec4& col = style.Colors[i];
+            if ((ImGuiCol_ModalWindowDimBg != ei) &&
+                (ImGuiCol_NavWindowingDimBg != ei) &&
+                (col.w < 1.00f || (ImGuiCol_FrameBg == ei)
+                    || (ImGuiCol_WindowBg == ei)
+                    || (ImGuiCol_ChildBg == ei)))
+            {
+                col.x = alpha_ * col.x;
+                col.y = alpha_ * col.y;
+                col.z = alpha_ * col.z;
+            }
         }
     }
 
@@ -96,7 +162,7 @@ int main(int, char**)
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer_Init(renderer);
 
-    SetupImGuiStyle(false, 0.9);
+    SetupImGuiStyle(true, 0.9);
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     //ImGuiDockNode* Node = ImGui::DockBuilderGetNode(DockID);
@@ -118,19 +184,20 @@ int main(int, char**)
     //IM_ASSERT(font != NULL);
 
     // Our state
-    int depth = 10;
-    int spf = 1;
-    ImVec4 col = ImVec4(1, 1, 1, 1);
-    int selectedObj = 3;
-    ImVec4 pos = ImVec4(0, 0, 0, 0);
-    ImVec4 rot = ImVec4(0, 45, 0, 0);
-    bool show = true;
-    bool showMaterialDropdown = false;
+    int selectedObject = 3;
+    bool enableRayLines = false;
+    int rayLineDepth = 5;
+    int rayLinesPerLightSource = 1;
+    ImVec4 rayLineColour = { 1, 0, 0, 0 };
     const char* materials[] = { "Lambertian", "Specular", "Glass" };
-    int materialType = 1;
-    ImVec4 colour = ImVec4(0.5, 0.8, 0.5, 0);
-    float albedo = 0.5;
-    float roughness = 0.2;
+    std::vector<Object>* objects = new std::vector<Object>();
+    RenderSettings previewSettings;
+    RenderSettings outputSettings;
+    Material material;
+    for (int i = 0; i < 5; i++) {
+        objects->push_back(GenerateRandomObject(i));
+    }
+
 
     SDL_Texture* scene =  SDL_CreateTextureFromSurface(renderer, SDL_LoadBMP("scene.bmp"));
 
@@ -167,18 +234,10 @@ int main(int, char**)
             {
                 if (ImGui::BeginMenu("File"))
                 {
-                    if (ImGui::MenuItem("New"))
-                    {
-                        //Do something
-                    }
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Layout"))
-                {
-                    if (ImGui::MenuItem("New"))
-                    {
-                        //Do something
-                    }
+                    ImGui::MenuItem("New");
+                    ImGui::MenuItem("Save");
+                    ImGui::MenuItem("Save As");
+                    ImGui::MenuItem("Open");
                     ImGui::EndMenu();
                 }
 
@@ -196,33 +255,45 @@ int main(int, char**)
 
         {
             ImGui::Begin("Objects", (bool*)1);
+            ImGui::Button("Add New Object", { ImGui::GetWindowWidth(), 20 });
 
             for (int n = 0; n < 5; n++)
             {
                 ImGui::SetItemAllowOverlap();
 
-                ImGui::SetCursorPos(ImVec2(0, n * 20 + 20));
+                ImGui::SetCursorPos(ImVec2(8, n * 25 + 20 + 35));
 
                 char buf[32];
                 sprintf(buf, "##Show %d", n+1);
-                
-                ImGui::Checkbox(buf, &show);
 
-                ImGui::SetCursorPos(ImVec2(25, n * 20 + 20 + 2));
-                sprintf(buf, "Object %d", n+1);
-                if (ImGui::Selectable(buf, selectedObj == n))
-                    selectedObj = n;
+                Object* obj = &((*objects)[n]);
+                
+                ImGui::Checkbox(buf, &obj->show);
+
+                ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 4 + 35));
+                sprintf(buf, (std::string("##object_id_") + std::to_string(obj->id)).c_str(), n + 1);
+                if (ImGui::Selectable(buf, selectedObject == n))
+                    selectedObject = n;
+                ImGui::SameLine();
+                ImGui::Text(obj->name.c_str());
             }
+
 
             ImGui::End();
         }
 
         {
             ImGui::Begin("Object Properties", (bool*)1);
+            Object* obj = &((*objects)[selectedObject]);
 
-            ImGui::InputText("Name", "Object 4", 100);
-            ImGui::DragFloat3("Position", (float*)&pos, 0.01);
-            ImGui::DragFloat3("Rotation", (float*)&rot, 0.5);
+            char buffer[32];
+            sprintf_s(buffer, obj->name.c_str(), obj->name.length());
+
+            ImGui::InputText("Name", buffer, 100);
+            ImGui::DragFloat3("Position", (float*)&obj->position, 0.01);
+            ImGui::DragFloat3("Rotation", (float*)&obj->rotation, 0.5);
+
+            obj->name = std::string(buffer);
 
             ImGui::End();
         }
@@ -230,14 +301,17 @@ int main(int, char**)
         {
             ImGui::Begin("Material Editor", (bool*)1);
 
-            const char* combo_preview_value = materials[materialType];  // Pass in the preview value visible before opening the combo (it could be anything)
+            Object* obj = &((*objects)[selectedObject]);
+            Material* material = &obj->material;
+
+            const char* combo_preview_value = materials[(int)material->type];  // Pass in the preview value visible before opening the combo (it could be anything)
             if (ImGui::BeginCombo("Material Type", combo_preview_value))
             {
                 for (int n = 0; n < IM_ARRAYSIZE(materials); n++)
                 {
-                    const bool is_selected = (materialType == n);
+                    const bool is_selected = ((int)material->type == n);
                     if (ImGui::Selectable(materials[n], is_selected))
-                        materialType = n;
+                        material->type = (MaterialType)n;
 
                     // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                     if (is_selected)
@@ -246,28 +320,27 @@ int main(int, char**)
                 ImGui::EndCombo();
             }
 
-            ImGui::ColorEdit3("Colour", (float*)&colour);
-            ImGui::SliderFloat("Albedo", &albedo, 0, 1);
-            ImGui::SliderFloat("Roughness", &roughness, 0, 1);
+            ImGui::ColorEdit3("Colour", (float*)&material->colour);
+            if (material->type != MaterialType::Glass) ImGui::SliderFloat("Albedo", &material->albedo, 0, 1);
+            if (material->type == MaterialType::Glass) ImGui::SliderFloat("Index of Refraction", &material->ir, 1, 2);
+            if (material->type != MaterialType::Lambertian) ImGui::SliderFloat("Roughness", &material->roughness, 0, 1);
 
             ImGui::End();
         }
 
         {
-            ImGui::Begin("Renderer", (bool*)1);
-            //ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
-            ImGui::Text("Settings");
-            if (ImGui::BeginTabBar("Render Settings")) {
+            ImGui::Begin("Render Settings", (bool*)1);
+            if (ImGui::BeginTabBar("Render Settings Tab Bar")) {
                 if (ImGui::BeginTabItem("Preview")) {
-                    ImGui::SliderInt("Max Depth", &depth, 1, 100);
-                    ImGui::SliderInt("Samples Per Frame", &spf, 1, 100);
-                    ImGui::ColorEdit3("Ambient Light Colour", (float*)&col);
+                    ImGui::SliderInt("Max Depth", &previewSettings.depth, 1, 100);
+                    ImGui::SliderInt("Samples Per Frame", &previewSettings.samples, 1, 100);
+                    ImGui::ColorEdit3("Ambient Light Colour", (float*)&previewSettings.ambient);
                     ImGui::EndTabItem();
                 }
                 if (ImGui::BeginTabItem("Output")) {
-                    ImGui::SliderInt("Max Depth", &depth, 1, 100);
-                    ImGui::SliderInt("Samples Per Frame", &spf, 1, 100);
-                    ImGui::ColorEdit3("Ambient Light Colour", (float*)&col);
+                    ImGui::SliderInt("Max Depth", &outputSettings.depth, 1, 100);
+                    ImGui::SliderInt("Samples Per Frame", &outputSettings.samples, 1, 100);
+                    ImGui::ColorEdit3("Ambient Light Colour", (float*)&outputSettings.ambient);
                     ImGui::EndTabItem();
                 }
                 ImGui::EndTabBar();
@@ -277,7 +350,17 @@ int main(int, char**)
         }
 
         {
+            ImGui::Begin("Ray Illustration");
+            ImGui::Checkbox("Enable", &enableRayLines);
+            ImGui::SliderInt("Bounces per line", &rayLineDepth, 1, 10);
+            ImGui::SliderInt("Lines per light source", &rayLinesPerLightSource, 1, 10);
+            ImGui::ColorEdit3("Ray Line Colour", (float*)&rayLineColour);
+            ImGui::End();
+        }
+
+        {
             ImGui::Begin("Scene", (bool*)1);
+            ImGui::SetItemAllowOverlap();
             //ImGui::SetCursorPos(ImVec2(0, 0));
             float scale = 1.1;
 
@@ -288,9 +371,6 @@ int main(int, char**)
                 (void*)scene,
                 ImVec2(ImGui::GetCursorScreenPos()),
                 ImVec2((int)(ImGui::GetCursorScreenPos().x + size.x * scale), (int)(ImGui::GetCursorScreenPos().y + size.y * scale)));
-
-            //ImGui::SetCursorPosY((size.y * scale + 50));
-            //ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
             ImGui::End();
         }
