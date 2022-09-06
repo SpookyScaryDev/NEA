@@ -1,7 +1,7 @@
 #include "Vector3f.h"
 
 #include <math.h>
-#include <assert.h>
+#include <Error.h>
 
 namespace Prototype {
 
@@ -76,12 +76,12 @@ Vector3f& Vector3f::operator*=(float scalar) {
 }
 
 Vector3f Vector3f::operator/(const float scalar) const {
-    assert(scalar != 0);
+    ASSERT(scalar != 0, "Tried to divide a vector by 0!");
     return Vector3f(x / scalar, y / scalar, z / scalar);
 }
 
 Vector3f& Vector3f::operator/=(float scalar) {
-    assert(scalar != 0);
+    ASSERT(scalar != 0, "Tried to divide a vector by 0!");
     x /= scalar;
     y /= scalar;
     z /= scalar;
@@ -102,7 +102,7 @@ Vector3f operator*(const float scalar, const Vector3f& vector) {
 }
 
 Vector3f operator/(const float scalar, const Vector3f& vector) {
-    assert(scalar != 0);
+    ASSERT(scalar != 0, "Tried to divide a vector by 0!");
     return vector / scalar;
 }
 

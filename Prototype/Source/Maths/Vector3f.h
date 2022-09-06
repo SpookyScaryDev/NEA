@@ -8,22 +8,22 @@ public:
 
     void                Set(float fx, float fy, float fz);
 
-    float               Magnitude()                        const;
+    float               Magnitude()                         const;
     void                Normalize();
-    float               Dot(const Vector3f& vector)        const;
-    Vector3f&           Cross(const Vector3f& vector)      const;
+    float               Dot(const Vector3f& vector)         const;
+    Vector3f&           Cross(const Vector3f& vector)       const;
 
-    Vector3f            operator+(const Vector3f& vector)  const;
+    Vector3f            operator+(const Vector3f& vector)   const;
     Vector3f&           operator+=(const Vector3f& vector);
 
-    Vector3f            operator-(const Vector3f& vector)  const;
+    Vector3f            operator-(const Vector3f& vector)   const;
     Vector3f&           operator-=(const Vector3f& vector);
 
-    Vector3f            operator*(const float scalar)      const;
-    Vector3f            operator*(const Vector3f& vector)  const;
+    Vector3f            operator*(const float scalar)       const;
+    Vector3f            operator*(const Vector3f& vector)   const;
     Vector3f&           operator*=(float scalar);
 
-    Vector3f            operator/(const float scalar)      const;
+    Vector3f            operator/(const float scalar)       const;
     Vector3f&           operator/=(float scalar);
 
     bool                operator==(const Vector3f& vector)  const;

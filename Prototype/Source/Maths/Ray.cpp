@@ -9,7 +9,6 @@ Ray::Ray(const Vector3f& origin, const Vector3f& direction) :
     mDirection(direction)
 {}
 
-
 Vector3f Ray::GetPointAt(float u) const {
     return mOrigin + mDirection * u;
 }
