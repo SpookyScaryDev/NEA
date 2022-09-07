@@ -33,7 +33,7 @@ void Renderer::Init(Window* window) {
     SDL_RendererInfo rendererInfo;
     SDL_GetRendererInfo(mRawRenderer, &rendererInfo);
     printf("Renderer Info:\n");
-    printf("\tAPI: %s\n", rendererInfo.name);
+    printf("  API: %s\n", rendererInfo.name);
 
     mClearColour = Vector3f(0, 0, 0);
 }

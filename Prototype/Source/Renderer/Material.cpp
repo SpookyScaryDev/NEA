@@ -33,10 +33,13 @@ bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload)
     }
     case MaterialType::Glass: {
         float ratio;
+        // For now, assume that the ray is coming from / leaving the air. Air has a refractive index of 1.
         if (payload.frontFace) ratio = 1.0 / refractiveIndex;
         else ratio = refractiveIndex / 1.0;
 
-        // Make sure normal is pointing the right way!
+        // Make sure normal is pointing the right way! The normal always points outwards from the object,
+        // so if the may is coming from inside the object, the normal used to calculate refraction / reflection
+        // must be flipped
         Vector3f normal = payload.normal * -1;
         if (!payload.frontFace)
             normal *= -1;
@@ -72,26 +75,26 @@ Vector3f Material::Reflect(Vector3f i, Vector3f n) {
 }
 
 Vector3f Material::Refract(Vector3f i, Vector3f n, float ratio) {
-    float cos_i = -1 * n.Dot(i);
-    float sin2_t = ratio * ratio * (1 - cos_i * cos_i);
-    Vector3f refracted = ratio * i + (ratio * cos_i - sqrt(1 - sin2_t)) * n;
+    float cosTheta_i = -1 * n.Dot(i);
+    float sin2Theta_t = ratio * ratio * (1 - cosTheta_i * cosTheta_i);
+    Vector3f refracted = ratio * i + (ratio * cosTheta_i - sqrt(1 - sin2Theta_t)) * n;
     return refracted;
 }
 
 float Material::RSchlick2(Vector3f i, Vector3f n, float ir1, float ir2) {
     float r0 = (ir1 - ir2) / (ir1 + ir2);
     r0 *= r0;
-    float cos_i = - 1 *  n.Dot(i);
+    float cosTheta_i = - 1 *  n.Dot(i);
     float ratio = ir1 / ir2;
-    float sin2_t = ratio * ratio * (1 - cos_i * cos_i);
-    bool tir = sin2_t > 1;
+    float sin2Theta_t = ratio * ratio * (1 - cosTheta_i * cosTheta_i);
+    bool tir = sin2Theta_t > 1;
     if (ir1 <= ir2) {
-        float x = 1 - cos_i;
+        float x = 1 - cosTheta_i;
         return r0 + (1 - r0) * x * x * x * x * x;
     }
     else if (ir1 > ir2 && !tir) {
-        float cos_t = sqrt(1 - sin2_t);
-        float x = 1 - cos_t;
+        float cosTheta_t = sqrt(1 - sin2Theta_t);
+        float x = 1 - cosTheta_t;
         return r0 + (1 - r0) * x * x * x * x * x;
     }
     else {
@@ -102,10 +105,12 @@ float Material::RSchlick2(Vector3f i, Vector3f n, float ir1, float ir2) {
 Vector3f Material::RandomInUnitSphere() {
     Vector3f direction;
     do {
+        // Generate a random position in the unit cube centered about (0, 0, 0).
         direction.x = rand() / (RAND_MAX + 1.0) - 0.5;
         direction.y = rand() / (RAND_MAX + 1.0) - 0.5;
         direction.z = rand() / (RAND_MAX + 1.0) - 0.5;
     }
+    // Reject if the length is greater than 1 (not in the unit sphere).
     while (direction.Magnitude() > 1);
     return direction;
 }

@@ -28,7 +28,7 @@ public:
 
     void                    SetClearColour(const Colour& colour);
     void                    Clear();                              // Clear screen to the clear colour.
-    void                    Refresh();
+    void                    Refresh();                            // Draw to the screen.
 
     Colour                  TraceRay(Scene& scene, const Ray& ray, int depth, const RenderSettings& settings);
     Colour**                RenderScene(Scene scene, Colour** image, const RenderSettings& settings, int frame = 0);

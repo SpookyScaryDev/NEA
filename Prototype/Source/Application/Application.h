@@ -13,7 +13,7 @@ public:
     virtual               ~Application();                                       // Calls Shutdown.
     static Application*   GetApp();                                             // Retrieve the static game instance.
     void                  Run();
-    virtual void          Update(float deltaTime) {};       // Called every frame.
+    virtual void          Update(float deltaTime) = 0;      // Called every frame.
 
     Window*               GetWindow() const;
     Renderer*             GetRenderer() const;

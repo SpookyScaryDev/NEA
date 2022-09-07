@@ -30,6 +30,7 @@ Application::~Application() {
     Shutdown();
     mApplication = nullptr;
     delete mWindow;
+    delete mRenderer;
 }
 
 Application* Application::GetApp() {
