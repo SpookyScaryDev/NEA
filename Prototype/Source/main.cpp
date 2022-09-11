@@ -125,11 +125,6 @@ public:
         ImGui::DockSpaceOverViewport();
 
         {
-            ImGui::Begin("Objects");
-            ImGui::End();
-        }
-
-        {
             ImGui::Begin("Renderer Settings");
             ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
 
@@ -146,10 +141,12 @@ public:
 
         {
             ImGui::Begin("Scene");
-            float scale = 2;
 
             SDL_Point size;
             SDL_QueryTexture(finalImage->GetRawTexture(), NULL, NULL, &size.x, &size.y);
+
+            float scale = ImGui::GetWindowWidth() / size.x;
+            if (scale * size.y > ImGui::GetWindowHeight()) scale = ImGui::GetWindowHeight() / size.y;
 
             ImGui::GetWindowDrawList()->AddImage(
                 (void*)finalImage->GetRawTexture(),

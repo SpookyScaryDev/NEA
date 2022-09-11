@@ -55,69 +55,52 @@ Object GenerateRandomObject(int id) {
     material.albedo = rand() / (RAND_MAX + 1.0);
     material.ir = rand() / (RAND_MAX + 1.0) + 1;
     material.roughness = rand() / (RAND_MAX + 1.0);
-    material.colour = { (rand() % 255) / 255.0f, (rand() % 255) / 255.0f , (rand() % 255) / 255.0f , 1 };
+    material.colour = { (rand() % 255) / 255.0f, (rand() % 255) / 255.0f, (rand() % 255) / 255.0f , 1 };
 
     Object object;
     object.id = id;
     object.name = std::string("Sphere ") + std::to_string(id + 1);
-    object.position = { rand() / (RAND_MAX + 1) * 10.0f - 5, rand() / (RAND_MAX + 1) * 10.0f - 5 , rand() / (RAND_MAX + 1) * 10.0f - 5, 0 };
+    object.position = { rand() / (RAND_MAX + 1) * 10.0f - 5, rand() / (RAND_MAX + 1) * 10.0f - 5, rand() / (RAND_MAX + 1) * 10.0f - 5, 0 };
     object.rotation = { (float)(rand() % 360), (float)(rand() % 360), (float)(rand() % 360), 0 };
-    object.show = (bool)rand() % 2;
+    object.show = (bool)(rand() % 2);
     object.material = material;
 
     return object;
 }
 
-void SetupImGuiStyle(bool bStyleDark_, float alpha_)
-{
+void SetImGuiStyle(bool darkMode) {
     ImGuiStyle& style = ImGui::GetStyle();
 
-    if (bStyleDark_)
-    {
+    style.FrameRounding = 3.0f;
+    style.WindowBorderSize = 0;
+
+    if (darkMode) {
         ImGui::StyleColorsDark();
     }
-    else
-    {
+    else {
         ImGui::StyleColorsLight();
     }
 
-    if (bStyleDark_) {
-        for (int i = 0; i <= ImGuiCol_COUNT; i++)
-        {
-            ImGuiCol_ ei = (ImGuiCol_)i;
-            ImVec4& col = style.Colors[i];
-            if (ImGuiCol_WindowBg == ei || ImGuiCol_TitleBg == ei)
-            {
-                col.x = 3 * col.x;
-                col.y = 3 * col.y;
-                col.z = 3 * col.z;
-            }
+    for (int i = 0; i <= ImGuiCol_COUNT; i++) {
+        ImGuiCol_ colourID = (ImGuiCol_)i;
+        ImVec4& colour = style.Colors[i];
+        // Make window and title bar background lighter.
+        if (darkMode && (colourID == ImGuiCol_WindowBg || colourID == ImGuiCol_TitleBg)) {
+            colour.x = 3 * colour.x;
+            colour.y = 3 * colour.y;
+            colour.z = 3 * colour.z;
+        }
+        // Make backgrounds darker. If statement condition taken from https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9.
+        if (!darkMode && (colourID != ImGuiCol_ModalWindowDimBg) &&
+            (colourID != ImGuiCol_NavWindowingDimBg) &&
+            ((colourID == ImGuiCol_FrameBg) ||
+                (colourID == ImGuiCol_WindowBg) ||
+                (colourID == ImGuiCol_ChildBg))) {
+            colour.x = 0.9 * colour.x;
+            colour.y = 0.9 * colour.y;
+            colour.z = 0.9 * colour.z;
         }
     }
-    else {
-        for (int i = 0; i <= ImGuiCol_COUNT; i++)
-        {
-            ImGuiCol_ ei = (ImGuiCol_)i;
-            ImVec4& col = style.Colors[i];
-            if ((ImGuiCol_ModalWindowDimBg != ei) &&
-                (ImGuiCol_NavWindowingDimBg != ei) &&
-                (col.w < 1.00f || (ImGuiCol_FrameBg == ei)
-                    || (ImGuiCol_WindowBg == ei)
-                    || (ImGuiCol_ChildBg == ei)))
-            {
-                col.x = alpha_ * col.x;
-                col.y = alpha_ * col.y;
-                col.z = alpha_ * col.z;
-            }
-        }
-    }
-
-    style.ChildBorderSize = 1.0f;
-    style.FrameBorderSize = 0.0f;
-    style.PopupBorderSize = 1.0f;
-    style.WindowBorderSize = 0.0f;
-    style.FrameRounding = 3.0f;
-    style.Alpha = 1.0f;
 }
 
 // Main code
@@ -162,7 +145,7 @@ int main(int, char**)
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer_Init(renderer);
 
-    SetupImGuiStyle(false, 0.9);
+    SetImGuiStyle(false);
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     //ImGuiDockNode* Node = ImGui::DockBuilderGetNode(DockID);
@@ -225,15 +208,13 @@ int main(int, char**)
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
+        // Allow main window to be used as dockspace.
         ImGui::DockSpaceOverViewport();
 
-        ImGui::ShowDemoWindow();
-
+        // Menu bar.
         {
-            if (ImGui::BeginMainMenuBar())
-            {
-                if (ImGui::BeginMenu("File"))
-                {
+            if (ImGui::BeginMainMenuBar()) {
+                if (ImGui::BeginMenu("File")) {
                     ImGui::MenuItem("New");
                     ImGui::MenuItem("Save");
                     ImGui::MenuItem("Save As");
@@ -245,43 +226,46 @@ int main(int, char**)
             }
         }
 
+        // FPS overlay
         {
             ImGui::SetNextWindowBgAlpha(0.35f);
             ImGui::Begin("Example: Simple overlay", (bool*)1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
-            ImGui::Text("Renderer API: OpenGL");
+            ImGui::Text("Renderer API: direct 3d");
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
         }
 
+        // Object selection window.
         {
             ImGui::Begin("Objects", (bool*)1);
-            ImGui::Button("Add New Object", { ImGui::GetWindowWidth(), 20 });
+            if (ImGui::Button("Add New Object", { ImGui::GetWindowWidth(), 20 })) {
+                objects->push_back(GenerateRandomObject(objects->size()));
+            }
 
-            for (int n = 0; n < 5; n++)
-            {
+            for (int n = 0; n < objects->size(); n++) {
                 ImGui::SetItemAllowOverlap();
 
                 ImGui::SetCursorPos(ImVec2(8, n * 25 + 20 + 35));
 
                 char buf[32];
-                sprintf(buf, "##Show %d", n+1);
-
+                sprintf(buf, "##Show %d", n + 1); // Hidden id for the checkbox.
                 Object* obj = &((*objects)[n]);
-                
+
+                // Checkbox to show and hide object.
                 ImGui::Checkbox(buf, &obj->show);
 
                 ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 4 + 35));
                 sprintf(buf, (std::string("##object_id_") + std::to_string(obj->id)).c_str(), n + 1);
                 if (ImGui::Selectable(buf, selectedObject == n))
-                    selectedObject = n;
+                    selectedObject = n; // Set currently selected object.
                 ImGui::SameLine();
                 ImGui::Text(obj->name.c_str());
             }
 
-
             ImGui::End();
         }
 
+        // Pannel to edit currently selected object.
         {
             ImGui::Begin("Object Properties", (bool*)1);
             Object* obj = &((*objects)[selectedObject]);
@@ -298,23 +282,21 @@ int main(int, char**)
             ImGui::End();
         }
 
+        // Pannel to edit the material of the currently selected object.
         {
             ImGui::Begin("Material Editor", (bool*)1);
 
             Object* obj = &((*objects)[selectedObject]);
             Material* material = &obj->material;
 
-            const char* combo_preview_value = materials[(int)material->type];  // Pass in the preview value visible before opening the combo (it could be anything)
-            if (ImGui::BeginCombo("Material Type", combo_preview_value))
-            {
-                for (int n = 0; n < IM_ARRAYSIZE(materials); n++)
-                {
-                    const bool is_selected = ((int)material->type == n);
-                    if (ImGui::Selectable(materials[n], is_selected))
-                        material->type = (MaterialType)n;
+            const char* comboText = materials[(int)material->type];  // Pass in the preview value visible before opening the combo (it could be anything)
+            if (ImGui::BeginCombo("Material Type", comboText)) {
+                for (int i = 0; i < IM_ARRAYSIZE(materials); i++) {
+                    const bool selected = ((int)material->type == i);
+                    if (ImGui::Selectable(materials[i], selected))
+                        material->type = (MaterialType)i;
 
-                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                    if (is_selected)
+                    if (selected)
                         ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndCombo();
@@ -328,6 +310,7 @@ int main(int, char**)
             ImGui::End();
         }
 
+        // Pannel to set the renderer configuration.
         {
             ImGui::Begin("Render Settings", (bool*)1);
             if (ImGui::BeginTabBar("Render Settings Tab Bar")) {
@@ -349,6 +332,7 @@ int main(int, char**)
             ImGui::End();
         }
 
+        // Pannel to control the ray visualisation overlay.
         {
             ImGui::Begin("Ray Illustration");
             ImGui::Checkbox("Enable", &enableRayLines);
@@ -358,15 +342,18 @@ int main(int, char**)
             ImGui::End();
         }
 
+        // The window which contains the renderer output.
         {
             ImGui::Begin("Scene", (bool*)1);
             ImGui::SetItemAllowOverlap();
-            //ImGui::SetCursorPos(ImVec2(0, 0));
-            float scale = 1.1;
 
             SDL_Point size;
             SDL_QueryTexture(scene, NULL, NULL, &size.x, &size.y);
 
+            float scale = ImGui::GetWindowWidth() / size.x;
+            if (scale * size.y > ImGui::GetWindowHeight()) scale = ImGui::GetWindowHeight() / size.y;
+
+            ImGui::SetCursorPos({ 0, 25 });
             ImGui::GetWindowDrawList()->AddImage(
                 (void*)scene,
                 ImVec2(ImGui::GetCursorScreenPos()),
