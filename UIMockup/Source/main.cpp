@@ -162,7 +162,7 @@ int main(int, char**)
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer_Init(renderer);
 
-    SetupImGuiStyle(true, 0.9);
+    SetupImGuiStyle(false, 0.9);
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     //ImGuiDockNode* Node = ImGui::DockBuilderGetNode(DockID);
