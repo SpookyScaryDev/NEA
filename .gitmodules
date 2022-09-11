@@ -1,4 +1,4 @@
-[submodule "Prototype/Vendor/imgui"]
+[submodule "Vendor/imgui"]
 	path = Prototype/Vendor/imgui
 	url = https://github.com/ocornut/imgui
     branch = docking
