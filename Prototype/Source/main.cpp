@@ -89,7 +89,7 @@ public:
         scene.AddObject((Object*)new Sphere({ 1.6, 0.35, -2 }, 0.35, metal));
         scene.AddObject((Object*)new Sphere({ 0, 0.375, -2 }, -0.375, glass));
 
-        scene.AddObject((Object*)new Sphere({   0,   1.5, -2 },    0.15, light));
+        //scene.AddObject((Object*)new Sphere({   0,   1.5, -2 },    0.15, light));
 
         Camera camera = Camera(aspectRatio, 1.2, { 0.1,  0.4, -0.1 });
 
