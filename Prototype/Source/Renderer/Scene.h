@@ -14,7 +14,7 @@ public:
     void                   AddObject(Object* object);
     void                   SetCamera(const Camera& cam);
     std::vector<Object*>&  GetObjects();
-    bool                   ClosestHit(const Ray& ray, float min, float max, RayPayload& payload);
+    bool                   ClosestHit(const Ray& ray, float min, float max, RayPayload& payload); // Returns true if something is hit. Details are stored in the payload.
 
     Camera                 camera;
 private:

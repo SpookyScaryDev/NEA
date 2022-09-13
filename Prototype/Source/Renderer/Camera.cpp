@@ -24,11 +24,4 @@ Vector3f Camera::GetViewportPos(Vector2f screenPos) const {
 	return viewportPos;
 }
 
-Vector2f Camera::GetScreenPos(Vector3f viewportPos) const {
-	Vector2f screenPos;
-	screenPos.x = (viewportPos.x - mViewportBottomLeft.x + position.x) / mViewportHorizontal.x;
-	screenPos.y = (viewportPos.y - mViewportBottomLeft.y + position.y) / mViewportVertical.y;
-	return screenPos;
-}
-
 }

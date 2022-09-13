@@ -53,6 +53,8 @@ public:
     void GenerateScene() {
         // Generate a test scene.
         srand(2);
+
+        // Add random objects.
         for (int i = -1; i <= 1; i += 1) {
             for (int j = -1; j <= 1; j += 1) {
                 Material mat;
@@ -89,7 +91,7 @@ public:
         scene.AddObject((Object*)new Sphere({ 1.6, 0.35, -2 }, 0.35, metal));
         scene.AddObject((Object*)new Sphere({ 0, 0.375, -2 }, -0.375, glass));
 
-        //scene.AddObject((Object*)new Sphere({   0,   1.5, -2 },    0.15, light));
+        scene.AddObject((Object*)new Sphere({   0,   1.5, -2 },    0.15, light));
 
         Camera camera = Camera(aspectRatio, 1.2, { 0.1,  0.4, -0.1 });
 
@@ -165,6 +167,7 @@ public:
     }
 
     void Update(float deltaTime) {
+        // Start rendering again from scratch if settings are changed.
         if (redraw) frame = 0;
         redraw = false;
         frame++;
@@ -181,6 +184,7 @@ public:
         }
         finalImage->Unlock();
 
+        // Process input for ImGui.
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
@@ -191,6 +195,7 @@ public:
                 mIsRunning = false;
         }
 
+        // Draw the interface.
         GetRenderer()->Clear();
         UpdateImGui();
     }
