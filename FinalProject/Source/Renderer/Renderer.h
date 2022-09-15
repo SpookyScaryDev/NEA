@@ -5,6 +5,7 @@
 #include <Renderer/Texture.h>
 #include <Renderer/Scene.h>
 #include <Window/Window.h>
+#include <random>
 
 struct SDL_Renderer;
 
@@ -30,10 +31,12 @@ public:
     void                    Clear();                              // Clear screen to the clear colour.
     void                    Refresh();                            // Draw to the screen.
 
-    Colour                  TraceRay(Scene& scene, const Ray& ray, int depth, const RenderSettings& settings);
+    Colour                  TraceRay(Scene& scene, const Ray& ray, int depth, const RenderSettings& settings, std::mt19937& rnd);
     Colour**                RenderScene(Scene scene, Colour** image, const RenderSettings& settings, int frame = 0);
 
 private:
+    void                    RenderStrip(Scene scene, Colour** image, const RenderSettings& settings, int frame, int start, int end);
+
     SDL_Renderer*           mRawRenderer;
     Vector3f                mClearColour;
 };

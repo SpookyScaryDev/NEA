@@ -88,12 +88,12 @@ public:
         Material metal = Material(MaterialType::Glossy, { 0.8, 0.8, 0.8 }, 0);
         Material glass = Material(MaterialType::Glass, { 1.0, 1.0, 1.0 }, 0, 1.44);
 
-        Material light = Material(MaterialType::Lambertian, { 1, 1, 1 }, 1, 1, { 100, 100, 100 });
+        Material light = Material(MaterialType::Lambertian, { 1, 1, 1 }, 1, 1, 20);
 
         scene.AddObject("Big Metal Sphere", (Object*)new Sphere({ 1.6, 0.35, -2 }, 0.35, metal));
         scene.AddObject("Big Glass Sphere", (Object*)new Sphere({ 0, 0.375, -2 }, -0.375, glass));
 
-        //scene.AddObject("Light", (Object*)new Sphere({0,   1.5, -2}, 0.15, light));
+        scene.AddObject("Light", (Object*)new Sphere({0,   1.5, -2}, 0.3, light));
 
         Camera camera = Camera(aspectRatio, 1.2, { 0.1,  0.4, -0.1 });
 
@@ -248,6 +248,7 @@ public:
 
             ImGui::InputText("Name", buffer, 100);
             redraw |= ImGui::DragFloat3("Position", (float*)&obj->position, 0.01);
+            redraw |= ImGui::DragFloat("Scale", &obj->scale, 0.01, 0.01, 100);
             //ImGui::DragFloat3("Rotation", (float*)&obj->rotation, 0.5);
 
             obj->name = std::string(buffer);
@@ -280,6 +281,7 @@ public:
             }
 
             redraw |= ImGui::ColorEdit3("Colour", (float*)&material->colour);
+            if (material->materialType != MaterialType::Glass) redraw |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.1, 0, 100);
             //if (material->type != MaterialType::Glass) ImGui::SliderFloat("Albedo", &material->albedo, 0, 1);
             if (material->materialType == MaterialType::Glass) redraw |= ImGui::SliderFloat("Index of Refraction", &material->refractiveIndex, 1, 2);
             if (material->materialType != MaterialType::Lambertian) redraw |= ImGui::SliderFloat("Roughness", &material->roughness, 0, 1);
@@ -327,14 +329,27 @@ public:
             SDL_Point size;
             SDL_QueryTexture(finalImage->GetRawTexture(), NULL, NULL, &size.x, &size.y);
 
-            float scale = ImGui::GetWindowWidth() / size.x;
-            if (scale * size.y > ImGui::GetWindowHeight()) scale = ImGui::GetWindowHeight() / size.y;
+            float scale = (ImGui::GetWindowWidth() - 15) / size.x;
+            if (scale * size.y > ImGui::GetWindowHeight()) scale = (ImGui::GetWindowHeight() - 15) / size.y;
 
-            ImGui::SetCursorPos({ 0, 25 });
-            ImGui::GetWindowDrawList()->AddImage(
-                (void*)finalImage->GetRawTexture(),
-                ImVec2(ImGui::GetCursorScreenPos()),
-                ImVec2((int)(ImGui::GetCursorScreenPos().x + size.x * scale), (int)(ImGui::GetCursorScreenPos().y + size.y * scale)));
+            //ImGui::SetCursorPos({ 0, 25 });
+            ImVec2 imageStartScreen = ImGui::GetCursorScreenPos();
+            //ImGui::GetWindowDrawList()->AddImage(
+            //    (void*)finalImage->GetRawTexture(),
+            //    ImVec2(ImGui::GetCursorScreenPos()),
+            //    ImVec2((int)(ImGui::GetCursorScreenPos().x + size.x * scale), (int)(ImGui::GetCursorScreenPos().y + size.y * scale)));
+            ImGui::Image((void*)(intptr_t)finalImage->GetRawTexture(), ImVec2(size.x * scale, size.y * scale));
+
+            if (ImGui::IsMouseClicked(0)) {
+                ImVec2 pos = ImGui::GetMousePos();
+                Vector2f relativePos = { (pos.x - imageStartScreen.x) / (scale * size.x), (pos.y - imageStartScreen.y) / (scale * size.y)};
+                Vector3f viewportPos = scene.camera.GetViewportPos(relativePos);
+                Ray ray = Ray(scene.camera.position, viewportPos);
+                RayPayload payload;
+                if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
+                    selectedObject = payload.object->id;
+                }
+            }
 
             ImGui::End();
         }

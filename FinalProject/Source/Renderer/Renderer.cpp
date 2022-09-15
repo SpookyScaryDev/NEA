@@ -1,5 +1,8 @@
 #include "Renderer.h"
 
+#include <thread>
+#include <chrono>
+#include <random>
 #include <SDL.h>
 #include <Window/Window.h>
 #include <Maths/Vector2f.h>
@@ -60,7 +63,7 @@ void Renderer::Refresh() {
     SDL_RenderPresent(mRawRenderer);
 }
 
-Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderSettings& settings) {
+Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderSettings& settings, std::mt19937& rnd) {
     // Don't go on forever!
     if (depth >= settings.maxDepth) {
         return Vector3f();
@@ -70,8 +73,8 @@ Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderS
     RayPayload payload;
     if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
         Ray newRay = Ray(Vector3f(), Vector3f());
-        payload.material->Scatter(ray, newRay, payload);
-        return TraceRay(scene, newRay, depth, settings) * payload.material->colour + payload.material->emitted;
+        payload.material->Scatter(ray, newRay, payload, rnd);
+        return TraceRay(scene, newRay, depth, settings, rnd) * payload.material->colour + payload.material->Emit();
     }
     else {
         return settings.ambientLight;
@@ -79,26 +82,32 @@ Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderS
     return { 0, 0, 0 };
 }
 
-Colour** Renderer::RenderScene(Scene scene, Colour** image, const RenderSettings& settings, int frame) {
+void Renderer::RenderStrip(Scene scene, Colour** image, const RenderSettings& settings, int frame, int start, int end) {
+    //srand(static_cast<int>(time(0)));
+    std::random_device r;
+    std::seed_seq seed{ r(), r(), r(), r(), r(), r(), r(), r() };
+    std::mt19937 rnd(seed);
+    std::uniform_real_distribution<float> dist(0.0, 1.0);
+
     for (int y = 0; y < settings.resolution.y; y++) {
-        for (int x = 0; x < settings.resolution.x; x++) {
+        for (int x = start; x < end; x++) {
             Colour colour;
             for (size_t i = 0; i < settings.samples; i++) {
                 Vector2f screenPos = { x / settings.resolution.x, y / settings.resolution.y };
 
                 // Slightly randomize position (anti-aliasing).
-                screenPos.x += (rand() / (RAND_MAX + 1.0)) / (settings.resolution.x + 1);
-                screenPos.y += (rand() / (RAND_MAX + 1.0)) / (settings.resolution.y + 1);
+                screenPos.x += dist(rnd) / (settings.resolution.x + 1);
+                screenPos.y += dist(rnd) / (settings.resolution.y + 1);
 
                 Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
                 Ray ray = Ray(scene.camera.position, viewportPos);
-                colour+= TraceRay(scene, ray, 0, settings);
+                colour += TraceRay(scene, ray, 0, settings, rnd);
             }
             colour /= settings.samples;
 
             // Average colour over time.
             Colour oldColour = image[x][y];
-            Colour finalColour = ((oldColour * (frame-1)) + colour) / (frame);
+            Colour finalColour = ((oldColour * (frame - 1)) + colour) / (frame);
 
             // Clamp colour so it doesn't overflow.
             finalColour.x = fmin(finalColour.x, 1);
@@ -108,6 +117,22 @@ Colour** Renderer::RenderScene(Scene scene, Colour** image, const RenderSettings
             image[x][y] = finalColour;
         }
     }
+}
+
+Colour** Renderer::RenderScene(Scene scene, Colour** image, const RenderSettings& settings, int frame) {
+    int strips = 10;
+    std::vector<std::thread> threads;
+
+    int size = settings.resolution.x / strips;
+    for (int i = 0; i < strips; i++) {
+        threads.push_back(std::thread([=] { RenderStrip(scene, image, settings, frame, i * size, (i + 1) * size); }));
+    }
+
+    for (int i = 0; i < threads.size(); i++) {
+        threads[i].join();
+    }
+
+    //RenderStrip(scene, image, settings, frame, 0, settings.resolution.x);
 
     return image;
 }

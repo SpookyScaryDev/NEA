@@ -7,12 +7,15 @@ namespace Prototype {
 
 Sphere::Sphere(Vector3f position, float radius, Material material) :
 	radius(radius),
-	Object(position, material) {}
+	Object(position, material)
+{
+	scale = radius;
+}
 
 bool Sphere::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
 	float a = ray.GetDirection().Dot(ray.GetDirection());
 	float b = 2.0 * ray.GetDirection().Dot(ray.GetOrigin() - position);
-	float c = (ray.GetOrigin() - position).Dot((ray.GetOrigin() - position)) - radius * radius;
+	float c = (ray.GetOrigin() - position).Dot((ray.GetOrigin() - position)) - scale * scale;
 	float d = b * b - 4.0 * a * c;
 
 	if (d >= 0) {

@@ -7,26 +7,28 @@
 
 namespace Prototype {
 
-Material::Material(MaterialType type, Colour colour, float roughness, float refractiveIndex, Colour emitted) :
+Material::Material(MaterialType type, Colour colour, float roughness, float refractiveIndex, float emitted) :
     materialType(type),
     colour(colour),
     roughness(roughness),
     refractiveIndex(refractiveIndex),
     emitted(emitted) {}
 
-bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload) {
+bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload, std::mt19937& rnd) {
+    std::uniform_real_distribution<float> dist(0.0, 1.0);
+
     switch (materialType) {
 
     case MaterialType::Lambertian: {
         // Reflects in any direction.
-        Vector3f direction = RandomInUnitHemisphere(payload.normal);
+        Vector3f direction = RandomInUnitHemisphere(payload.normal, rnd);
         out = Ray(payload.point, direction);
         break;
     }
     case MaterialType::Glossy: {
         // Reflects according to Snell's law, with randomization determined by roughness.
         Vector3f direction = Reflect(incoming.GetDirection(), payload.normal);
-        direction += roughness * RandomInUnitHemisphere(direction);
+        direction += roughness * RandomInUnitHemisphere(direction, rnd);
         direction.Normalize();
         out = Ray(payload.point, direction);
         break;
@@ -49,14 +51,14 @@ bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload)
         else reflectance = RSchlick2(incoming.GetDirection(), normal, refractiveIndex, 0);
 
         Vector3f direction;
-        if (reflectance >= rand() / (RAND_MAX + 1.0)) {
+        if (reflectance >= dist(rnd)) {
             direction = Reflect(incoming.GetDirection(), payload.normal);
         }
         else {
             direction = Refract(incoming.GetDirection(), normal, ratio);
         }
          
-        out = Ray(payload.point, direction + roughness * RandomInUnitHemisphere(direction));
+        out = Ray(payload.point, direction + roughness * RandomInUnitHemisphere(direction, rnd));
         break;
     }
     default:
@@ -67,7 +69,7 @@ bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload)
 }
 
 Colour Material::Emit() {
-    return emitted;
+    return emitted * colour;
 }
 
 Vector3f Material::Reflect(Vector3f i, Vector3f n) {
@@ -102,21 +104,23 @@ float Material::RSchlick2(Vector3f i, Vector3f n, float ir1, float ir2) {
     }
 }
 
-Vector3f Material::RandomInUnitSphere() {
+Vector3f Material::RandomInUnitSphere(std::mt19937& rnd) {
+    std::uniform_real_distribution<float> dist(0.0, 1.0);
+
     Vector3f direction;
     do {
         // Generate a random position in the unit cube centered about (0, 0, 0).
-        direction.x = rand() / (RAND_MAX + 1.0) - 0.5;
-        direction.y = rand() / (RAND_MAX + 1.0) - 0.5;
-        direction.z = rand() / (RAND_MAX + 1.0) - 0.5;
+        direction.x = dist(rnd) - 0.5;
+        direction.y = dist(rnd) - 0.5;
+        direction.z = dist(rnd) - 0.5;
     }
     // Reject if the length is greater than 1 (not in the unit sphere).
     while (direction.Magnitude() > 1);
     return direction;
 }
 
-Vector3f Material::RandomInUnitHemisphere(Vector3f normal) {
-    Vector3f direction = RandomInUnitSphere();
+Vector3f Material::RandomInUnitHemisphere(Vector3f normal, std::mt19937& rnd) {
+    Vector3f direction = RandomInUnitSphere(rnd);
     // If not in the hemisphere, flip.
     if (direction.Dot(normal) > 0) direction = direction * -1;
     return direction;
