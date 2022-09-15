@@ -82,7 +82,7 @@ Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderS
     return { 0, 0, 0 };
 }
 
-void Renderer::RenderStrip(Scene scene, Colour** image, const RenderSettings& settings, int frame, int start, int end) {
+void Renderer::RenderStrip(Scene scene, Colour** image, int** objects, const RenderSettings& settings, int frame, int start, int end) {
     //srand(static_cast<int>(time(0)));
     std::random_device r;
     std::seed_seq seed{ r(), r(), r(), r(), r(), r(), r(), r() };
@@ -95,13 +95,25 @@ void Renderer::RenderStrip(Scene scene, Colour** image, const RenderSettings& se
             for (size_t i = 0; i < settings.samples; i++) {
                 Vector2f screenPos = { x / settings.resolution.x, y / settings.resolution.y };
 
+                Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
+
                 // Slightly randomize position (anti-aliasing).
                 screenPos.x += dist(rnd) / (settings.resolution.x + 1);
                 screenPos.y += dist(rnd) / (settings.resolution.y + 1);
 
-                Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
+                Vector3f viewportPosRand = scene.camera.GetViewportPos(screenPos);
                 Ray ray = Ray(scene.camera.position, viewportPos);
-                colour += TraceRay(scene, ray, 0, settings, rnd);
+                Ray rayRand = Ray(scene.camera.position, viewportPosRand);
+
+                RayPayload payload;
+                if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
+                    objects[x][y] = payload.object->id;
+                }
+                else {
+                    objects[x][y] = -1;
+                }
+
+                colour += TraceRay(scene, rayRand, 0, settings, rnd);
             }
             colour /= settings.samples;
 
@@ -119,13 +131,13 @@ void Renderer::RenderStrip(Scene scene, Colour** image, const RenderSettings& se
     }
 }
 
-Colour** Renderer::RenderScene(Scene scene, Colour** image, const RenderSettings& settings, int frame) {
+Colour** Renderer::RenderScene(Scene scene, Colour** image, int** objects, const RenderSettings& settings, int frame) {
     int strips = 10;
     std::vector<std::thread> threads;
 
     int size = settings.resolution.x / strips;
     for (int i = 0; i < strips; i++) {
-        threads.push_back(std::thread([=] { RenderStrip(scene, image, settings, frame, i * size, (i + 1) * size); }));
+        threads.push_back(std::thread([=] { RenderStrip(scene, image, objects, settings, frame, i * size, (i + 1) * size); }));
     }
 
     for (int i = 0; i < threads.size(); i++) {
