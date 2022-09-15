@@ -14,7 +14,7 @@ FinalProject/Intermediate/
 
 # Files
 compile_commands.json
-**.sln
-**.vcxproj
+# **.sln
+# **.vcxproj
 **.user
 **.filters

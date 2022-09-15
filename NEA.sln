@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Prototype", "Prototype\Prototype.vcxproj", "{3BB58105-A71F-367C-F05D-E7215C0714D1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FinalProject", "FinalProject\FinalProject.vcxproj", "{2630DF19-1293-6EBE-BB18-A774A75A3A41}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UIMockup", "UIMockup\UIMockup.vcxproj", "{5244989C-3E11-F3A7-672A-E14F53562836}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Development|x64 = Development|x64
+		Ship|x64 = Ship|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3BB58105-A71F-367C-F05D-E7215C0714D1}.Debug|x64.ActiveCfg = Debug|x64
+		{3BB58105-A71F-367C-F05D-E7215C0714D1}.Debug|x64.Build.0 = Debug|x64
+		{3BB58105-A71F-367C-F05D-E7215C0714D1}.Development|x64.ActiveCfg = Development|x64
+		{3BB58105-A71F-367C-F05D-E7215C0714D1}.Development|x64.Build.0 = Development|x64
+		{3BB58105-A71F-367C-F05D-E7215C0714D1}.Ship|x64.ActiveCfg = Ship|x64
+		{3BB58105-A71F-367C-F05D-E7215C0714D1}.Ship|x64.Build.0 = Ship|x64
+		{2630DF19-1293-6EBE-BB18-A774A75A3A41}.Debug|x64.ActiveCfg = Debug|x64
+		{2630DF19-1293-6EBE-BB18-A774A75A3A41}.Debug|x64.Build.0 = Debug|x64
+		{2630DF19-1293-6EBE-BB18-A774A75A3A41}.Development|x64.ActiveCfg = Development|x64
+		{2630DF19-1293-6EBE-BB18-A774A75A3A41}.Development|x64.Build.0 = Development|x64
+		{2630DF19-1293-6EBE-BB18-A774A75A3A41}.Ship|x64.ActiveCfg = Ship|x64
+		{2630DF19-1293-6EBE-BB18-A774A75A3A41}.Ship|x64.Build.0 = Ship|x64
+		{5244989C-3E11-F3A7-672A-E14F53562836}.Debug|x64.ActiveCfg = Debug|x64
+		{5244989C-3E11-F3A7-672A-E14F53562836}.Debug|x64.Build.0 = Debug|x64
+		{5244989C-3E11-F3A7-672A-E14F53562836}.Development|x64.ActiveCfg = Development|x64
+		{5244989C-3E11-F3A7-672A-E14F53562836}.Development|x64.Build.0 = Development|x64
+		{5244989C-3E11-F3A7-672A-E14F53562836}.Ship|x64.ActiveCfg = Ship|x64
+		{5244989C-3E11-F3A7-672A-E14F53562836}.Ship|x64.Build.0 = Ship|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
