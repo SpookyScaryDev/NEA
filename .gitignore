@@ -1,12 +1,16 @@
 # Directories
 .vs/
 compile_commands/
+.cache/
 
 Prototype/Binaries/
 Prototype/Intermediate/
 
 UIMockup/Binaries/
 UIMockup/Intermediate/
+
+FinalProject/Binaries/
+FinalProject/Intermediate/
 
 # Files
 compile_commands.json
