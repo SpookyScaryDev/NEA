@@ -22,6 +22,7 @@ bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload,
     case MaterialType::Lambertian: {
         // Reflects in any direction.
         Vector3f direction = RandomInUnitHemisphere(payload.normal, rnd);
+        if (!payload.frontFace) direction *= -1;
         out = Ray(payload.point, direction);
         break;
     }
