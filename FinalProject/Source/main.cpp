@@ -14,6 +14,7 @@
 #include <Renderer/Texture.h>
 #include <Renderer/Camera.h>
 #include <Renderer/Sphere.h>
+#include <Renderer/Mesh.h>
 
 #include <Error.h>
 
@@ -41,6 +42,7 @@ public:
         renderSettings.maxDepth = 10;
         renderSettings.samples = 1;
         renderSettings.ambientLight = Vector3f(1, 1, 1);
+        renderSettings.checkerboard = false;
 
         ambientLightColour = { renderSettings.ambientLight.x, renderSettings.ambientLight.y, renderSettings.ambientLight.z, 1 };
 
@@ -48,6 +50,8 @@ public:
 
         // The image which will be rendered on the GUI.
         finalImage = new Texture(width, height);
+
+        SDL_SetTextureScaleMode(finalImage->GetRawTexture(), SDL_ScaleModeBest);
 
         selectedObject = 0;
 
@@ -95,11 +99,13 @@ public:
         Material light = Material(MaterialType::Lambertian, { 1, 1, 1 }, 1, 1, 20);
 
         scene.AddObject("Big Metal Sphere", (Object*)new Sphere({ 1.6, 0.35, -2 }, 0.35, metal));
-        scene.AddObject("Big Glass Sphere", (Object*)new Sphere({ 0, 0.375, -2 }, -0.375, glass));
+        scene.AddObject("Big Glass Sphere", (Object*)new Sphere({ 0, 0.375, -2 },  0.375, glass));
 
         scene.AddObject("Light", (Object*)new Sphere({0,   1.5, -2}, 0.3, light));
 
-        Camera camera = Camera(aspectRatio, 1.2, { 0.1,  0.4, -0.1 });
+        scene.AddObject("Cube", (Object*)new Mesh({ -0.46, 0.09, 0-0.2 }, "cube.obj", metal));
+
+        Camera camera = Camera(aspectRatio, 1.2, { 0,  0.13, 0.3 });
 
         scene.SetCamera(camera);
     }
@@ -191,6 +197,7 @@ public:
             ImGui::Begin("Example: Simple overlay", (bool*)1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
             //ImGui::Text("Renderer API: direct 3d");
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::Text("Renderer: %.3f ms/frame (%.1f FPS)", rendererFps * 1000, 1000/(rendererFps * 1000));
             ImGui::End();
         }
 
@@ -300,6 +307,7 @@ public:
                     redraw |= ImGui::SliderInt("Max Depth", &renderSettings.maxDepth, 1, 100);
                     redraw |= ImGui::SliderInt("Samples Per Frame", &renderSettings.samples, 1, 100);
                     redraw |= ImGui::ColorEdit3("Ambient Light Colour", (float*)&renderSettings.ambientLight);
+                    redraw |= ImGui::Checkbox("Checkerboard", &renderSettings.checkerboard);
                     ImGui::EndTabItem();
                 }
                 //if (ImGui::BeginTabItem("Output")) {
@@ -364,14 +372,44 @@ public:
         redraw = false;
         frame++;
 
+        std::chrono::system_clock::time_point previousTime = std::chrono::system_clock::now();
         image = GetRenderer()->RenderScene(scene, image, objects, renderSettings, frame);
+        std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
+        std::chrono::duration<float> elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(currentTime - previousTime);
+        rendererFps = elapsed.count();
 
         // Prepare image texture for rendering.
         finalImage->Lock();
         for (int y = 0; y < renderSettings.resolution.y; y++) {
             for (int x = 0; x < renderSettings.resolution.x; x++) {
-                    Colour colour = image[x][y];
-                    finalImage->SetColourAt({ (float)x, (float)y }, colour * 255);
+                Colour colour = Vector3f();
+
+                if (renderSettings.checkerboard && !((x % 2 == 0 && y % 2 == 0) || (x % 2 != 0 && y % 2 != 0))) {
+                    int samples = 0;
+                    if (x - 1 >= 0) {
+                        colour += image[x - 1][y];
+                        samples++;
+                    }
+                    if (x + 1 < renderSettings.resolution.x) {
+                        colour += image[x + 1][y];
+                        samples++;
+                    }
+                    if (y - 1 >= 0) {
+                        colour += image[x][y - 1];
+                        samples++;
+                    }
+                    if (y + 1 < renderSettings.resolution.y) {
+                        colour += image[x][y + 1];
+                        samples++;
+                    }
+
+                    colour /= samples;
+                }
+                else {
+                    colour = image[x][y];
+                }
+
+                finalImage->SetColourAt({ (float)x, (float)y }, colour * 255);
             }
         }
         for (int y = 0; y < renderSettings.resolution.y; y++) {
@@ -428,6 +466,8 @@ private:
 
     bool redraw;
     ImVec4 ambientLightColour;
+
+    float rendererFps;
 };
 
 int main(int, char**) {

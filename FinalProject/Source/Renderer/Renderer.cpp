@@ -91,42 +91,48 @@ void Renderer::RenderStrip(Scene scene, Colour** image, int** objects, const Ren
 
     for (int y = 0; y < settings.resolution.y; y++) {
         for (int x = start; x < end; x++) {
-            Colour colour;
-            for (size_t i = 0; i < settings.samples; i++) {
-                Vector2f screenPos = { x / settings.resolution.x, y / settings.resolution.y };
 
-                Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
+            Vector2f screenPos = { x / settings.resolution.x, y / settings.resolution.y };
+            Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
+            Ray ray = Ray(scene.camera.position, viewportPos);
 
-                // Slightly randomize position (anti-aliasing).
-                screenPos.x += dist(rnd) / (settings.resolution.x + 1);
-                screenPos.y += dist(rnd) / (settings.resolution.y + 1);
-
-                Vector3f viewportPosRand = scene.camera.GetViewportPos(screenPos);
-                Ray ray = Ray(scene.camera.position, viewportPos);
-                Ray rayRand = Ray(scene.camera.position, viewportPosRand);
-
-                RayPayload payload;
-                if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
-                    objects[x][y] = payload.object->id;
-                }
-                else {
-                    objects[x][y] = -1;
-                }
-
-                colour += TraceRay(scene, rayRand, 0, settings, rnd);
+            // TODO: could do this in trace ray if I need more speed, but it will be messier!
+            RayPayload payload;
+            if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
+                objects[x][y] = payload.object->id;
             }
-            colour /= settings.samples;
+            else {
+                objects[x][y] = -1;
+            }
 
-            // Average colour over time.
-            Colour oldColour = image[x][y];
-            Colour finalColour = ((oldColour * (frame - 1)) + colour) / (frame);
+            if (!settings.checkerboard || ((x % 2 == 0 && y % 2 == 0) || (x % 2 != 0 && y % 2 != 0))) {
+                Colour colour;
+                for (size_t i = 0; i < settings.samples; i++) {
 
-            // Clamp colour so it doesn't overflow.
-            finalColour.x = fmin(finalColour.x, 1);
-            finalColour.y = fmin(finalColour.y, 1);
-            finalColour.z = fmin(finalColour.z, 1);
 
-            image[x][y] = finalColour;
+                    // Slightly randomize position (anti-aliasing).
+                    screenPos.x += dist(rnd) / (settings.resolution.x + 1);
+                    screenPos.y += dist(rnd) / (settings.resolution.y + 1);
+
+                    Vector3f viewportPosRand = scene.camera.GetViewportPos(screenPos);
+                    Ray rayRand = Ray(scene.camera.position, viewportPosRand);
+
+
+                    colour += TraceRay(scene, rayRand, 0, settings, rnd);
+                }
+                colour /= settings.samples;
+
+                // Average colour over time.
+                Colour oldColour = image[x][y];
+                Colour finalColour = ((oldColour * (frame - 1)) + colour) / (frame);
+
+                // Clamp colour so it doesn't overflow.
+                finalColour.x = fmin(finalColour.x, 1);
+                finalColour.y = fmin(finalColour.y, 1);
+                finalColour.z = fmin(finalColour.z, 1);
+
+                image[x][y] = finalColour;
+            }
         }
     }
 }

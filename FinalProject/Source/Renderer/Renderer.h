@@ -16,6 +16,7 @@ struct RenderSettings {
     int                 maxDepth;
     int                 samples;
     Colour              ambientLight;
+    bool                checkerboard;
 };
 
 class Renderer { 
