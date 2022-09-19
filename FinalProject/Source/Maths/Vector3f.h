@@ -11,7 +11,7 @@ public:
     float               Magnitude()                         const;
     void                Normalize();
     float               Dot(const Vector3f& vector)         const;
-    Vector3f&           Cross(const Vector3f& vector)       const;
+    Vector3f            Cross(const Vector3f& vector)       const;
 
     Vector3f            operator+(const Vector3f& vector)   const;
     Vector3f&           operator+=(const Vector3f& vector);
