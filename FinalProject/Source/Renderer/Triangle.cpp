@@ -28,7 +28,7 @@ bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& paylo
     Vector3f pvec = ray.GetDirection().Cross(v0v2);
     float det = v0v1.Dot(pvec);
     // ray and triangle are parallel if det is close to 0
-    if (fabs(det) < 0.0001) return false;
+    if (fabs(det) < 0.000001) return false;
     float invDet = 1 / det;
 
     Vector3f tvec = ray.GetOrigin() - v0;
