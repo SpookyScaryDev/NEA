@@ -46,7 +46,7 @@ bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& paylo
     payload.point = ray.GetPointAt(payload.t);
     payload.normal = N;
     payload.normal.Normalize();
-    payload.frontFace = payload.normal.Dot(ray.GetDirection()) < 0 ? false : true;
+    payload.frontFace = payload.normal.Dot(ray.GetDirection()) > 0 ? false : true;
     payload.material = &material;
     payload.object = this;
 

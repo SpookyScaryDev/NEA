@@ -19,13 +19,25 @@ bool Sphere::Intersect(const Ray& ray, float min, float max, RayPayload& payload
 	float d = b * b - 4.0 * a * c;
 
 	if (d >= 0) {
-		float t = (-b - sqrt(d)) / (2.0 * a);
+		float t1 = (-b - sqrt(d)) / (2.0 * a);
+		float t2 = (-b + sqrt(d)) / (2.0 * a);
+		float t = 0;
+		if (t1 <= max && t1 >= min) t = t1;
+		else if (t2 <= max && t2 >= min) t = t2;
+		else return false;
+
 		if (t <= max && t >= min) {
 			payload.t = t;
 			payload.point = ray.GetPointAt(payload.t);
-			payload.normal = position - payload.point;
+			payload.normal = payload.point - position;
 			payload.normal.Normalize();	
-			payload.frontFace = payload.normal.Dot(ray.GetDirection()) < 0 ? false : true;
+			if (payload.normal.Dot(ray.GetDirection()) > 0) {
+				payload.frontFace = false;
+			}
+			else {
+				payload.frontFace = true;
+			}
+			//payload.frontFace = payload.normal.Dot(ray.GetDirection()) < 0 ? false : true;
 			payload.material = &material;
 			payload.object = this;
 			return true;
