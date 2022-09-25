@@ -51,7 +51,7 @@ bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload,
         else reflectance = RSchlick2(incoming.GetDirection(), normal, refractiveIndex, 1);
 
         Vector3f direction;
-        if (reflectance == 1) {
+        if (reflectance >= dist(rnd)) {
             direction = Reflect(incoming.GetDirection(), normal);
         }
         else {
