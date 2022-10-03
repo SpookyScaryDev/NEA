@@ -53,7 +53,7 @@ bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload,
         else reflectance = RSchlick2(incoming.GetDirection(), normal, refractiveIndex, 1);
 
         Vector3f direction;
-        if (reflectance >= dist(rnd)) {
+        if (reflectance > dist(rnd)) {
             direction = Reflect(incoming.GetDirection(), normal);
         }
         else {
@@ -79,42 +79,42 @@ Vector3f Material::Reflect(Vector3f i, Vector3f n) {
 }
 
 Vector3f Material::Refract(Vector3f i, Vector3f n, float ratio) {
-    //float cosTheta_i = -1 * n.Dot(i);
-    //float sin2Theta_t = ratio * ratio * (1 - cosTheta_i * cosTheta_i);
-    //Vector3f refracted = ratio * i + (ratio * cosTheta_i - sqrt(1 - sin2Theta_t)) * n;
-    //return refracted;
-    auto cos_theta = fmin((i*-1).Dot(n), 1.0);
-    Vector3f r_out_perp = ratio * (i + cos_theta * n);
-    Vector3f r_out_parallel = -sqrt(fabs(1.0 - r_out_perp.Magnitude() * r_out_perp.Magnitude())) * n;
-    return r_out_perp + r_out_parallel;
+    float cosTheta_i = (-1 * i).Dot(n);
+    float sin2Theta_t = ratio * ratio * (1 - cosTheta_i * cosTheta_i);
+    Vector3f refracted = ratio * i + (ratio * cosTheta_i - sqrt(1 - sin2Theta_t)) * n;
+    return refracted;
+    //auto cos_theta = fmin((i*-1).Dot(n), 1.0);
+    //Vector3f r_out_perp = ratio * (i + cos_theta * n);
+    //Vector3f r_out_parallel = -sqrt(fabs(1.0 - r_out_perp.Magnitude() * r_out_perp.Magnitude())) * n;
+    //return r_out_perp + r_out_parallel;
 }
 
 float Material::RSchlick2(Vector3f i, Vector3f n, float ir1, float ir2) {
-    //float r0 = (ir1 - ir2) / (ir1 + ir2);
-    //r0 *= r0;
-    //float cosTheta_i = -1 *  n.Dot(i);
-    //float ratio = ir1 / ir2;
-    //float sin2Theta_t = ratio * ratio * (1.0 - cosTheta_i * cosTheta_i);
-    //bool tir = sin2Theta_t > 1.0;
-    //if (ir1 <= ir2) {
-    //    float x = 1.0 - cosTheta_i;
-    //    return r0 + (1 - r0) * x * x * x * x * x;
-    //}
-    //else if (ir1 > ir2 && !tir) {
-    //    float cosTheta_t = sqrt(1.0 - sin2Theta_t);
-    //    float x = 1.0 - cosTheta_t;
-    //    return r0 + (1.0 - r0) * x * x * x * x * x;
-    //}
-    //else {
-    //    return 1;
-    //}
+    float r0 = (ir1 - ir2) / (ir1 + ir2);
+    r0 *= r0;
+    float cosTheta_i = -1 *  n.Dot(i);
+    float ratio = ir1 / ir2;
+    float sin2Theta_t = ratio * ratio * (1.0 - cosTheta_i * cosTheta_i);
+    bool tir = sin2Theta_t > 1.0;
+    if (ir1 <= ir2) {
+        float x = 1.0 - cosTheta_i;
+        return r0 + (1 - r0) * x * x * x * x * x;
+    }
+    else if (ir1 > ir2 && !tir) {
+        float cosTheta_t = sqrt(1.0 - sin2Theta_t);
+        float x = 1.0 - cosTheta_t;
+        return r0 + (1.0 - r0) * x * x * x * x * x;
+    }
+    else {
+        return 1;
+    }
 
-    float cosine = fmin((-1 * i).Dot(n), 1.0);
-    float ref_idx = ir1 / ir2;
+    //float cosine = fmin((-1 * i).Dot(n), 1.0);
+    //float ref_idx = ir1 / ir2;
 
-    auto r0 = (1 - ref_idx) / (1 + ref_idx);
-    r0 = r0 * r0;
-    return r0 + (1 - r0) * pow((1 - cosine), 5);
+    //auto r0 = (1 - ref_idx) / (1 + ref_idx);
+    //r0 = r0 * r0;
+    //return r0 + (1 - r0) * pow((1 - cosine), 5);
 
 }
 
