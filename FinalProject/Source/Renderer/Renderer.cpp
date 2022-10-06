@@ -97,11 +97,9 @@ void Renderer::RenderStrip(Scene scene, Colour** image, const RenderSettings& se
 
                 Colour colour;
                 for (size_t i = 0; i < settings.samples; i++) {
-
-
                     // Slightly randomize position (anti-aliasing).
-                    screenPos.x += dist(rnd) / (settings.resolution.x + 1);
-                    screenPos.y += dist(rnd) / (settings.resolution.y + 1);
+                    screenPos.x = (x + (dist(rnd) - 0.5)) / (settings.resolution.x);
+                    screenPos.y = (y + (dist(rnd) - 0.5)) / (settings.resolution.y);
 
                     Vector3f viewportPosRand = scene.camera.GetViewportPos(screenPos);
                     Ray rayRand = Ray(scene.camera.position, viewportPosRand);
