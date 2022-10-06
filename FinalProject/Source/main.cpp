@@ -53,7 +53,7 @@ public:
 
         SDL_SetTextureScaleMode(finalImage->GetRawTexture(), SDL_ScaleModeBest);
 
-        selectedObject = 0;
+        selectedObject = 12;
 
         GenerateScene();
     }
@@ -63,7 +63,7 @@ public:
         srand(2);
 
         Material ground = Material(MaterialType::Lambertian, { 0.5, 0.5, 0.5 });
-        scene.AddObject("Ground", (Object*) new Sphere({ 0, -5000, -2 }, 5000, ground));
+        scene.AddObject("Ground", (Object*) new Sphere({ 0, -1000, -2 }, 1000, ground));
 
         // Add random objects.
         for (int i = -1; i <= 1; i += 1) {
@@ -101,11 +101,20 @@ public:
         scene.AddObject("Big Metal Sphere", (Object*)new Sphere({ 1.6, 0.35, -2 }, 0.35, metal));
         scene.AddObject("Big Glass Sphere", (Object*)new Sphere({ 0, 0.375, -2 },  0.375, glass));
 
-        scene.AddObject("Light", (Object*)new Sphere({0,   1.5, -2}, 0.3, light));
+        //scene.AddObject("Light", (Object*)new Sphere({0,   1.5, -2}, 0.3, light));
 
-        scene.AddObject("Cube", (Object*)new Mesh({ -0.46, 0.09, 0-0.2 }, "cube.obj", metal));
+        Material cube1 = Material(MaterialType::Lambertian, { 0.5, 0.5, 1 }, 0);
+        scene.AddObject("Cube 1", (Object*)new Mesh({ -0.46, 0.1, 0-0.2 }, "cube.obj", cube1));
 
-        Camera camera = Camera(aspectRatio, 1.2, { 0,  0.13, 0.3 });
+        Material cube2mat = Material(MaterialType::Lambertian, { 0.5, 1, 0.5 }, 0);
+        Object* cube2 = (Object*)new Mesh({ 0.46, 0.06, 0 - 0.25 }, "cube.obj", cube2mat);
+        cube2->SetScale({ 0.6, 0.6, 0.6 });
+        scene.AddObject("Cube 2", cube2);
+
+        Material amogus = Material(MaterialType::Lambertian, { 0.8, 0, 0 }, 0);
+        scene.AddObject("Amogus", (Object*)new Mesh({ -0.18, 0, 0.36 }, "amogus.obj", amogus));
+
+        Camera camera = Camera(aspectRatio, 2, { 0,  0.13, 0.8 });
 
         scene.SetCamera(camera);
     }
@@ -147,26 +156,26 @@ public:
             ImGui::StyleColorsLight();
         }
 
-        for (int i = 0; i <= ImGuiCol_COUNT; i++) {
-            ImGuiCol_ colourID = (ImGuiCol_)i;
-            ImVec4& colour = style.Colors[i];
-            // Make window and title bar background lighter.
-            if (darkMode && (colourID == ImGuiCol_WindowBg || colourID == ImGuiCol_TitleBg)) {
-                colour.x = 3 * colour.x;
-                colour.y = 3 * colour.y;
-                colour.z = 3 * colour.z;
-            }
-            // Make backgrounds darker. If statement condition taken from https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9.
-            if (!darkMode && (colourID != ImGuiCol_ModalWindowDimBg) &&
-                (colourID != ImGuiCol_NavWindowingDimBg) &&
-                ((colourID == ImGuiCol_FrameBg) ||
-                    (colourID == ImGuiCol_WindowBg) ||
-                    (colourID == ImGuiCol_ChildBg))) {
-                colour.x = 0.9 * colour.x;
-                colour.y = 0.9 * colour.y;
-                colour.z = 0.9 * colour.z;
-            }
-        }
+        //for (int i = 0; i <= ImGuiCol_COUNT; i++) {
+        //    ImGuiCol_ colourID = (ImGuiCol_)i;
+        //    ImVec4& colour = style.Colors[i];
+        //    // Make window and title bar background lighter.
+        //    if (darkMode && (colourID == ImGuiCol_WindowBg || colourID == ImGuiCol_TitleBg)) {
+        //        colour.x = 3 * colour.x;
+        //        colour.y = 3 * colour.y;
+        //        colour.z = 3 * colour.z;
+        //    }
+        //    // Make backgrounds darker. If statement condition taken from https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9.
+        //    if (!darkMode && (colourID != ImGuiCol_ModalWindowDimBg) &&
+        //        (colourID != ImGuiCol_NavWindowingDimBg) &&
+        //        ((colourID == ImGuiCol_FrameBg) ||
+        //            (colourID == ImGuiCol_WindowBg) ||
+        //            (colourID == ImGuiCol_ChildBg))) {
+        //        colour.x = 0.9 * colour.x;
+        //        colour.y = 0.9 * colour.y;
+        //        colour.z = 0.9 * colour.z;
+        //    }
+        //}
     }
 
     void UpdateImGui() {
@@ -257,9 +266,29 @@ public:
             sprintf_s(buffer, obj->name.c_str(), obj->name.length());
 
             ImGui::InputText("Name", buffer, 100);
-            redraw |= ImGui::DragFloat3("Position", (float*)&obj->position, 0.01);
-            redraw |= ImGui::DragFloat("Scale", &obj->scale, 0.01, 0.01, 100);
-            //ImGui::DragFloat3("Rotation", (float*)&obj->rotation, 0.5);
+
+            Vector3f position = obj->GetPosition();
+            Vector3f rotation = obj->GetRotation();
+            Vector3f scale = obj->GetScale();
+
+            if (ImGui::DragFloat3("Position", (float*)&position, 0.01)) {
+                redraw = true;
+                obj->SetPosition(position);
+            }
+
+            if (ImGui::DragFloat3("Rotation", (float*)&rotation, 1)) {
+                redraw = true;
+                // TODO: Check!
+                rotation.x = fmod(rotation.x, 360);
+                rotation.y = fmod(rotation.y, 360);
+                rotation.z = fmod(rotation.z, 360);
+                obj->SetRotation(rotation);
+            }
+
+            if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01)) {
+                redraw = true;
+                obj->SetScale(scale);
+            }
 
             obj->name = std::string(buffer);
 
@@ -382,6 +411,19 @@ public:
         std::chrono::duration<float> elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(currentTime - previousTime);
         rendererFps = elapsed.count();
 
+        for (int y = 0; y < renderSettings.resolution.y; y++) {
+            for (int x = 0; x < renderSettings.resolution.x; x++) {
+                //TODO: Put this in the renderer!!
+                Vector2f screenPos = { x / renderSettings.resolution.x, y / renderSettings.resolution.y };
+                Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
+                Ray ray = Ray(scene.camera.position, viewportPos);
+                Object* selected = scene.GetObjects()[selectedObject];
+                RayPayload payload;
+                isSelectedObjectVisible[x][y] = selected->Intersect(ray, 0, FLT_MAX, payload);
+
+            }
+        }
+
         // Prepare image texture for rendering.
         finalImage->Lock();
         for (int y = 0; y < renderSettings.resolution.y; y++) {
@@ -414,14 +456,6 @@ public:
                 }
 
                 finalImage->SetColourAt({ (float)x, (float)y }, colour * 255);
-
-                Vector2f screenPos = { x / renderSettings.resolution.x, y / renderSettings.resolution.y };
-                Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
-                Ray ray = Ray(scene.camera.position, viewportPos);
-                Object* selected = scene.GetObjects()[selectedObject];
-                RayPayload payload;
-                isSelectedObjectVisible[x][y] = selected->Intersect(ray, 0, FLT_MAX, payload);
-
             }
         }
         for (int y = 0; y < renderSettings.resolution.y; y++) {

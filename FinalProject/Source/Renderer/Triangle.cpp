@@ -3,6 +3,7 @@
 #include <vector>
 #include <Renderer/Object.h>
 #include <Maths/Vector3f.h>
+#include <Maths/Matrix4x4f.h>
 
 namespace Prototype {
 
@@ -12,18 +13,25 @@ Triangle::Triangle(Vector3f position, Vector3f verticies[3], Material material) 
 	mVerticies[0] = verticies[0];
 	mVerticies[1] = verticies[1];
 	mVerticies[2] = verticies[2];
+
+    mTransformedVerticies[0] = verticies[0];
+    mTransformedVerticies[1] = verticies[1];
+    mTransformedVerticies[2] = verticies[2];
 }
 
 bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
     // TODO: Go through this!
-    
-    //ray.GetDirection().Normalize();
-    Vector3f v0 = mVerticies[0] * scale + position;
-    Vector3f v1 = mVerticies[1] * scale + position;
-    Vector3f v2 = mVerticies[2] * scale + position;
 
-    Vector3f v0v1 = v1 - v0;
-    Vector3f v0v2 = v2 - v0;
+    if (mDirty) {
+        mTransform = Matrix4x4f::Translate(mPosition) * Matrix4x4f::Rotate(mRotation) * Matrix4x4f::Scale(mScale);
+        mTransformedVerticies[0] = mTransform * mVerticies[0];
+        mTransformedVerticies[1] = mTransform * mVerticies[1];
+        mTransformedVerticies[2] = mTransform * mVerticies[2];
+        mDirty = false;
+    }
+
+    Vector3f v0v1 = mTransformedVerticies[1] - mTransformedVerticies[0];
+    Vector3f v0v2 = mTransformedVerticies[2] - mTransformedVerticies[0];
     Vector3f N = v0v1.Cross(v0v2);  //N 
     Vector3f pvec = ray.GetDirection().Cross(v0v2);
     float det = v0v1.Dot(pvec);
@@ -31,7 +39,7 @@ bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& paylo
     if (fabs(det) < 0.000001) return false;
     float invDet = 1 / det;
 
-    Vector3f tvec = ray.GetOrigin() - v0;
+    Vector3f tvec = ray.GetOrigin() - mTransformedVerticies[0];
     float u = tvec.Dot(pvec) * invDet;
     if (u < 0 || u > 1) return false;
 

@@ -18,6 +18,9 @@ private:
 	std::vector<Triangle*>   mFaces;
 	Vector3f                 mMin;    // For AABB. TODO: don't leave this here!
 	Vector3f                 mMax;
+
+	Vector3f                 mTransformedMin;
+	Vector3f                 mTransformedMax;
 };
 
 }

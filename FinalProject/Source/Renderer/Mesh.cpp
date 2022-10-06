@@ -63,24 +63,53 @@ void Mesh::LoadFromFile(const char* filePath) {
 }
 
 bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
-	// TODO: OOF!
-	Vector3f transformedMin = mMin * scale + position;
-	Vector3f transformedMax = mMax * scale + position;
+	if (mDirty) {
+		for each (Triangle * triangle in mFaces) {
+			Object* object = (Object*)triangle;
 
-	float tx1 = (transformedMin.x - ray.GetOrigin().x) / ray.GetDirection().x;
-	float tx2 = (transformedMax.x - ray.GetOrigin().x) / ray.GetDirection().x;
+			object->SetPosition(mPosition);
+			object->SetRotation(mRotation);
+			object->SetScale(mScale);
+		}
+
+		Vector3f nonRotatedTransformedMin = mMin * mScale;
+		Vector3f nonRotatedTransformedMax = mMax * mScale;
+
+		mTransformedMin = Vector3f();
+		mTransformedMax = Vector3f();
+
+		Matrix4x4f m = Matrix4x4f::Rotate(mRotation);
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				float a = m[i][j] * nonRotatedTransformedMin[j];
+				float b = m[i][j] * nonRotatedTransformedMax[j];
+				mTransformedMin[i] += a < b ? a : b;
+				mTransformedMax[i] += a < b ? b : a;
+			}
+		}
+
+		mTransformedMin += mPosition;
+		mTransformedMax += mPosition;
+
+		mDirty = false;
+	}
+
+	// TODO: OOF!
+
+	float tx1 = (mTransformedMin.x - ray.GetOrigin().x) / ray.GetDirection().x;
+	float tx2 = (mTransformedMax.x - ray.GetOrigin().x) / ray.GetDirection().x;
 
 	float tmin = fmin(tx1, tx2);
 	float tmax = fmax(tx1, tx2);
 
-	float ty1 = (transformedMin.y - ray.GetOrigin().y) / ray.GetDirection().y;
-	float ty2 = (transformedMax.y - ray.GetOrigin().y) / ray.GetDirection().y;
+	float ty1 = (mTransformedMin.y - ray.GetOrigin().y) / ray.GetDirection().y;
+	float ty2 = (mTransformedMax.y - ray.GetOrigin().y) / ray.GetDirection().y;
 
 	tmin = fmax(tmin, fmin(ty1, ty2));
 	tmax = fmin(tmax, fmax(ty1, ty2));
 
-	float tz1 = (transformedMin.z - ray.GetOrigin().z) / ray.GetDirection().z;
-	float tz2 = (transformedMax.z - ray.GetOrigin().z) / ray.GetDirection().z;
+	float tz1 = (mTransformedMin.z - ray.GetOrigin().z) / ray.GetDirection().z;
+	float tz2 = (mTransformedMax.z - ray.GetOrigin().z) / ray.GetDirection().z;
 
 	tmin = fmax(tmin, fmin(tz1, tz2));
 	tmax = fmin(tmax, fmax(tz1, tz2));
@@ -91,8 +120,6 @@ bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) 
 		float closestT = max;
 		for each (Triangle * triangle in mFaces) {
 			Object* object = (Object*)triangle;
-			object->position = position;
-			object->scale = scale;
 			if (object->show) {
 				if (object->Intersect(ray, min, closestT, tempPayload)) {
 					if (tempPayload.t < closestT) {

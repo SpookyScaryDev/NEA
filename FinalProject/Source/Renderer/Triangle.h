@@ -13,6 +13,7 @@ namespace Prototype {
 
 	private:
 		Vector3f            mVerticies[3];
+		Vector3f            mTransformedVerticies[3];
 
 	};
 
