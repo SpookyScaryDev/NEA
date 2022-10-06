@@ -1,7 +1,7 @@
 #include "Vector2f.h"
 
 #include <math.h>
-#include <assert.h>
+#include <Error.h>
 
 namespace Prototype {
 
@@ -25,6 +25,14 @@ void Vector2f::Normalize() {
 
 float Vector2f::Dot(const Vector2f& vector) const {
     return (x * vector.x) + (y * vector.y);
+}
+
+float& Vector2f::operator[](int i) {
+    if (i == 0) return x;
+    if (i == 1) return y;
+    else {
+        ERROR("Element out of range");
+    }
 }
 
 Vector2f Vector2f::operator+(const Vector2f& vector) const {
@@ -61,12 +69,12 @@ Vector2f& Vector2f::operator*=(float scalar) {
 }
 
 Vector2f Vector2f::operator/(const float scalar) const {
-    assert(scalar != 0);
+    ASSERT(scalar != 0, "Tried to divide a vector by 0!");
     return Vector2f(x / scalar, y / scalar);
 }
 
 Vector2f& Vector2f::operator/=(float scalar) {
-    assert(scalar != 0);
+    ASSERT(scalar != 0, "Tried to divide a vector by 0!");
     x /= scalar;
     y /= scalar;
 
@@ -86,7 +94,7 @@ Vector2f operator*(const float scalar, const Vector2f& vector) {
 }
 
 Vector2f operator/(const float scalar, const Vector2f& vector) {
-    assert(scalar != 0);
+    ASSERT(scalar != 0, "Tried to divide a vector by 0!");
     return vector / scalar;
 }
 

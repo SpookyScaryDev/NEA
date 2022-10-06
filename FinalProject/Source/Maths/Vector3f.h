@@ -13,6 +13,8 @@ public:
     float               Dot(const Vector3f& vector)         const;
     Vector3f            Cross(const Vector3f& vector)       const;
 
+    float&              operator[](int i);
+
     Vector3f            operator+(const Vector3f& vector)   const;
     Vector3f&           operator+=(const Vector3f& vector);
 

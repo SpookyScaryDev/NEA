@@ -35,6 +35,15 @@ Vector3f Vector3f::Cross(const Vector3f& vector) const {
                     x * vector.y - y * vector.x);
 }
 
+float& Vector3f::operator[](int i) {
+    if (i == 0) return x;
+    if (i == 1) return y;
+    if (i == 2) return z;
+    else {
+        ERROR("Element out of range");
+    }
+}
+
 Vector3f Vector3f::operator+(const Vector3f& vector) const {
     return Vector3f(x + vector.x, y + vector.y, z + vector.z);
 }

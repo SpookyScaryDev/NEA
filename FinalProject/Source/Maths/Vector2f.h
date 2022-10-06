@@ -12,6 +12,7 @@ public:
     void                Normalize();
     float               Dot(const Vector2f& vector)       const;
 
+    float&              operator[](int i);
 
     Vector2f            operator+(const Vector2f& vector) const;
     Vector2f&           operator+=(const Vector2f& vector);
