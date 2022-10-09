@@ -73,7 +73,8 @@ Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderS
     RayPayload payload;
     if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
         Ray newRay = Ray(Vector3f(), Vector3f());
-        payload.material->Scatter(ray, newRay, payload, rnd);
+        float pdf = 1;
+        payload.material->Scatter(ray, newRay, pdf, payload, rnd);
         return TraceRay(scene, newRay, depth, settings, rnd) * payload.material->colour + payload.material->Emit();
     }
     else {

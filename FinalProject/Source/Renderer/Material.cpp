@@ -1,5 +1,8 @@
 #include "Material.h"
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include <Maths/Vector2f.h>
 #include <Maths/Vector3f.h>
 #include <Maths/Ray.h>
 #include <Renderer/RayPayload.h>
@@ -14,7 +17,7 @@ Material::Material(MaterialType type, Colour colour, float roughness, float refr
     refractiveIndex(refractiveIndex),
     emitted(emitted) {}
 
-bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload, std::mt19937& rnd) {
+bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPayload& payload, std::mt19937& rnd) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
 
     switch (materialType) {
@@ -23,7 +26,11 @@ bool Material::Scatter(const Ray& incoming, Ray& out, const RayPayload& payload,
         // Reflects in any direction.
         Vector3f normal = payload.normal;
         if (!payload.frontFace) normal *= -1;
-        Vector3f direction = RandomInUnitHemisphere(normal, rnd) + 0.1 * normal;
+        //Vector3f direction = RandomInUnitHemisphere(normal, rnd) + 0.1 * normal;
+
+        Vector3f direction = SampleDirectionInHemisphere(normal, rnd);
+        pdf = DirectionInHemispherePDF(direction, normal);
+
         out = Ray(payload.point, direction);
         break;
     }
@@ -83,10 +90,6 @@ Vector3f Material::Refract(Vector3f i, Vector3f n, float ratio) {
     float sin2Theta_t = ratio * ratio * (1 - cosTheta_i * cosTheta_i);
     Vector3f refracted = ratio * i + (ratio * cosTheta_i - sqrt(1 - sin2Theta_t)) * n;
     return refracted;
-    //auto cos_theta = fmin((i*-1).Dot(n), 1.0);
-    //Vector3f r_out_perp = ratio * (i + cos_theta * n);
-    //Vector3f r_out_parallel = -sqrt(fabs(1.0 - r_out_perp.Magnitude() * r_out_perp.Magnitude())) * n;
-    //return r_out_perp + r_out_parallel;
 }
 
 float Material::RSchlick2(Vector3f i, Vector3f n, float ir1, float ir2) {
@@ -140,5 +143,27 @@ Vector3f Material::RandomInUnitHemisphere(Vector3f normal, std::mt19937& rnd) {
     return direction;
 }
 
+Vector2f Material::SampleBilinear(std::mt19937& rnd) {
+    std::uniform_real_distribution<float> dist(0.0, 1.0);
+    return { dist(rnd), dist(rnd) };
+}
+
+Vector3f Material::SampleDirectionInHemisphere(const Vector3f& normal, std::mt19937& rnd) {
+    Vector2f bilinearDistribution = SampleBilinear(rnd);
+    float a = 1 - 2 * bilinearDistribution.x;
+    float b = sqrt(1 - a * a);
+    float phi = 2 * M_PI * bilinearDistribution.y;
+    Vector3f direction = Vector3f();
+    direction.x = normal.x + b * cos(phi);
+    direction.y = normal.y + b * sin(phi);
+    direction.z = normal.z + a;
+    direction.Normalize();
+    return direction;
+}
+
+float Material::DirectionInHemispherePDF(const Vector3f& direction, const Vector3f& normal) {
+    float a = direction.z - normal.z;
+    return fabs(a / M_PI);
+}
 
 }

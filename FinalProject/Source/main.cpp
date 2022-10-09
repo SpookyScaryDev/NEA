@@ -101,7 +101,7 @@ public:
         scene.AddObject("Big Metal Sphere", (Object*)new Sphere({ 1.6, 0.35, -2 }, 0.35, metal));
         scene.AddObject("Big Glass Sphere", (Object*)new Sphere({ 0, 0.375, -2 },  0.375, glass));
 
-        //scene.AddObject("Light", (Object*)new Sphere({0,   1.5, -2}, 0.3, light));
+        scene.AddObject("Light", (Object*)new Sphere({0,   1.5, -2}, 0.3, light));
 
         Material cube1 = Material(MaterialType::Lambertian, { 0.5, 0.5, 1 }, 0);
         scene.AddObject("Cube 1", (Object*)new Mesh({ -0.46, 0.1, 0-0.2 }, "cube.obj", cube1));
