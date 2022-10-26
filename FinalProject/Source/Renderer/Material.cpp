@@ -29,19 +29,22 @@ bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPaylo
         //Vector3f direction = RandomInUnitHemisphere(normal, rnd) + 0.1 * normal;
 
         Vector3f direction = SampleDirectionInHemisphere(normal, rnd);
-        pdf = DirectionInHemispherePDF(direction, normal);
+        pdf = GetPDF(direction, payload);
 
         out = Ray(payload.point, direction);
         break;
     }
+
     case MaterialType::Glossy: {
         // Reflects according to Snell's law, with randomization determined by roughness.
         Vector3f direction = Reflect(incoming.GetDirection(), payload.normal);
-        direction += roughness * RandomInUnitHemisphere(direction, rnd);
+        direction = SampleDirectionInPhong(direction, rnd);
+        //direction += roughness * RandomInUnitHemisphere(direction, rnd);
         direction.Normalize();
         out = Ray(payload.point, direction);
         break;
     }
+
     case MaterialType::Glass: {
         float ratio;
         // For now, assume that the ray is coming from / leaving the air. Air has a refractive index of 1.
@@ -66,19 +69,40 @@ bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPaylo
         else {
             direction = Refract(incoming.GetDirection(), normal, ratio);
         }
-         
-        out = Ray(payload.point, direction + roughness * RandomInUnitHemisphere(direction, rnd));
+        //if (roughness > 0) SampleDirectionInPhong(direction, rnd);
+        out = Ray(payload.point, SampleDirectionInPhong(direction, rnd));
         break;
     }
+
     default:
         break;
     }
-    
+
     return true;
 }
 
 Colour Material::Emit() {
     return emitted * colour;
+}
+
+float Material::GetPDF(const Vector3f& direction, const RayPayload& payload) {
+    Vector3f normal = payload.normal;
+    if (!payload.frontFace) normal = normal * -1;
+
+    switch (materialType) {
+
+    case MaterialType::Lambertian: {
+        float a = direction.z - normal.z;
+        return fabs(a / M_PI);
+    }
+
+    case MaterialType::Glossy: {
+        float cosTheta = direction.x / normal.z;
+        return ((1000 - roughness + 1) / 2 * M_PI) * cosTheta;
+    }
+
+    default: return 0;
+    }
 }
 
 Vector3f Material::Reflect(Vector3f i, Vector3f n) {
@@ -95,7 +119,7 @@ Vector3f Material::Refract(Vector3f i, Vector3f n, float ratio) {
 float Material::RSchlick2(Vector3f i, Vector3f n, float ir1, float ir2) {
     float r0 = (ir1 - ir2) / (ir1 + ir2);
     r0 *= r0;
-    float cosTheta_i = -1 *  n.Dot(i);
+    float cosTheta_i = -1 * n.Dot(i);
     float ratio = ir1 / ir2;
     float sin2Theta_t = ratio * ratio * (1.0 - cosTheta_i * cosTheta_i);
     bool tir = sin2Theta_t > 1.0;
@@ -150,20 +174,50 @@ Vector2f Material::SampleBilinear(std::mt19937& rnd) {
 
 Vector3f Material::SampleDirectionInHemisphere(const Vector3f& normal, std::mt19937& rnd) {
     Vector2f bilinearDistribution = SampleBilinear(rnd);
-    float a = 1 - 2 * bilinearDistribution.x;
-    float b = sqrt(1 - a * a);
-    float phi = 2 * M_PI * bilinearDistribution.y;
+    //float a = 1 - 2 * bilinearDistribution.x;
+    //float b = sqrt(1 - a * a);
+    //float phi = 2 * M_PI * bilinearDistribution.y;
+    //Vector3f direction = Vector3f();
+    //direction.x = normal.x + b * cos(phi);
+    //direction.y = normal.y + b * sin(phi);
+    //direction.z = normal.z + a;
+    //direction.Normalize();
+
     Vector3f direction = Vector3f();
-    direction.x = normal.x + b * cos(phi);
-    direction.y = normal.y + b * sin(phi);
-    direction.z = normal.z + a;
+    direction.x = sqrt(bilinearDistribution[0]) * cos(2 * M_PI * bilinearDistribution[1]);
+    direction.y = sqrt(bilinearDistribution[0]) * sin(2 * M_PI * bilinearDistribution[1]);
+    direction.z = sqrt(1 - bilinearDistribution[0]);
     direction.Normalize();
-    return direction;
+
+    return TransformSample(direction, normal);
 }
 
-float Material::DirectionInHemispherePDF(const Vector3f& direction, const Vector3f& normal) {
-    float a = direction.z - normal.z;
-    return fabs(a / M_PI);
+Vector3f Material::SampleDirectionInPhong(const Vector3f& direction, std::mt19937& rnd) {
+    Vector3f out = { 0, 0, -1 };
+    //while (out.Dot(Vector3f(0, 0, 1)) < 0) {
+    Vector2f bilinearDistribution = SampleBilinear(rnd);
+    float cosTheta = pow(1 - bilinearDistribution[0], 1 / (1 + 1000 - roughness));
+    float sinTheta = sqrt(1 - cosTheta * cosTheta);
+    float phi = 2 * M_PI * bilinearDistribution[1];
+    out.x = cos(phi) * sinTheta;
+    out.y = sin(phi) * sinTheta;
+    out.z = cosTheta;
+    //}
+    return TransformSample(out, direction);
 }
+
+Vector3f Material::TransformSample(const Vector3f& sampleRelativeToTheZAxes, const Vector3f& direction) {
+    // A is some vector which is not parallel to any of the ONB axes.
+    Vector3f a = { 1, 0, 0 };
+    if (direction.x > 0.9) a = { 0, 1, 0 }; // Make sure a is not parallel to direction.
+
+    Vector3f s = a.Cross(direction);
+    s.Normalize();
+    Vector3f t = s.Cross(direction);
+    t.Normalize();
+
+    return sampleRelativeToTheZAxes.x * s + sampleRelativeToTheZAxes.y * t + sampleRelativeToTheZAxes.z * direction;
+}
+
 
 }

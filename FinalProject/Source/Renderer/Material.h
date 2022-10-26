@@ -19,7 +19,9 @@ public:
                         Material(MaterialType type = MaterialType::Lambertian, Colour colour = Vector3f(), float roughness = 1, float refractiveIndex = 1.5, float emitted = 0);
 
     bool                Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPayload& payload, std::mt19937& rnd); // Determines if a ray will scatter.
-    Colour              Emit();                                                            // The colour emitted if the material emits light.
+    Colour              Emit();                                                                                           // The colour emitted if the material emits light.
+
+    float               GetPDF(const Vector3f& direction, const RayPayload& payload);
 
     MaterialType        materialType;
     Colour              colour;
@@ -36,9 +38,9 @@ private:
 
     Vector2f            SampleBilinear(std::mt19937& rnd);
     Vector3f            SampleDirectionInHemisphere(const Vector3f& normal, std::mt19937& rnd);
+    Vector3f            SampleDirectionInPhong(const Vector3f& direction, std::mt19937& rnd);
 
-public:
-    float               DirectionInHemispherePDF(const Vector3f& direction, const Vector3f& normal);
+    Vector3f            TransformSample(const Vector3f& sampleRelativeToTheZAxes, const Vector3f& direction);
 
 };
 
