@@ -53,7 +53,7 @@ public:
 
         SDL_SetTextureScaleMode(finalImage->GetRawTexture(), SDL_ScaleModeBest);
 
-        selectedObject = 0;
+        selectedObject = -1;
 
         GenerateScene();
     }
@@ -264,38 +264,40 @@ public:
         // Pannel to edit currently selected object.
         {
             ImGui::Begin("Object Properties", (bool*)1);
-            Object* obj = scene.GetObjects()[selectedObject];
 
-            char buffer[32];
-            sprintf_s(buffer, obj->name.c_str(), obj->name.length());
+            if (selectedObject >= 0) {
+                Object* obj = scene.GetObjects()[selectedObject];
 
-            ImGui::InputText("Name", buffer, 100);
+                char buffer[32];
+                sprintf_s(buffer, obj->name.c_str(), obj->name.length());
 
-            Vector3f position = obj->GetPosition();
-            Vector3f rotation = obj->GetRotation();
-            Vector3f scale = obj->GetScale();
+                ImGui::InputText("Name", buffer, 100);
 
-            if (ImGui::DragFloat3("Position", (float*)&position, 0.01)) {
-                redraw = true;
-                obj->SetPosition(position);
+                Vector3f position = obj->GetPosition();
+                Vector3f rotation = obj->GetRotation();
+                Vector3f scale = obj->GetScale();
+
+                if (ImGui::DragFloat3("Position", (float*)&position, 0.01)) {
+                    redraw = true;
+                    obj->SetPosition(position);
+                }
+
+                if (ImGui::DragFloat3("Rotation", (float*)&rotation, 1)) {
+                    redraw = true;
+                    // TODO: Check!
+                    rotation.x = fmod(rotation.x, 360);
+                    rotation.y = fmod(rotation.y, 360);
+                    rotation.z = fmod(rotation.z, 360);
+                    obj->SetRotation(rotation);
+                }
+
+                if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01)) {
+                    redraw = true;
+                    obj->SetScale(scale);
+                }
+
+                obj->name = std::string(buffer);
             }
-
-            if (ImGui::DragFloat3("Rotation", (float*)&rotation, 1)) {
-                redraw = true;
-                // TODO: Check!
-                rotation.x = fmod(rotation.x, 360);
-                rotation.y = fmod(rotation.y, 360);
-                rotation.z = fmod(rotation.z, 360);
-                obj->SetRotation(rotation);
-            }
-
-            if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01)) {
-                redraw = true;
-                obj->SetScale(scale);
-            }
-
-            obj->name = std::string(buffer);
-
             ImGui::End();
         }
 
@@ -303,32 +305,33 @@ public:
         {
             ImGui::Begin("Material Editor", (bool*)1);
 
-            Object* obj = scene.GetObjects()[selectedObject];
-            Material* material = &obj->material;
+            if (selectedObject >= 0) {
+                Object* obj = scene.GetObjects()[selectedObject];
+                Material* material = &obj->material;
 
-            const char* materials[] = { "Lambertian", "Specular", "Glass" };
+                const char* materials[] = { "Lambertian", "Specular", "Glass" };
 
-            const char* comboText = materials[(int)material->materialType];  // Pass in the preview value visible before opening the combo (it could be anything)
-            if (ImGui::BeginCombo("Material Type", comboText)) {
-                for (int i = 0; i < IM_ARRAYSIZE(materials); i++) {
-                    const bool selected = ((int)material->materialType == i);
-                    if (ImGui::Selectable(materials[i], selected)) {
-                        material->materialType = (MaterialType)i;
-                        redraw = true;
+                const char* comboText = materials[(int)material->materialType];  // Pass in the preview value visible before opening the combo (it could be anything)
+                if (ImGui::BeginCombo("Material Type", comboText)) {
+                    for (int i = 0; i < IM_ARRAYSIZE(materials); i++) {
+                        const bool selected = ((int)material->materialType == i);
+                        if (ImGui::Selectable(materials[i], selected)) {
+                            material->materialType = (MaterialType)i;
+                            redraw = true;
+                        }
+
+                        if (selected)
+                            ImGui::SetItemDefaultFocus();
                     }
-
-                    if (selected)
-                        ImGui::SetItemDefaultFocus();
+                    ImGui::EndCombo();
                 }
-                ImGui::EndCombo();
+
+                redraw |= ImGui::ColorEdit3("Colour", (float*)&material->colour);
+                if (material->materialType != MaterialType::Glass) redraw |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.1, 0, 100);
+                //if (material->type != MaterialType::Glass) ImGui::SliderFloat("Albedo", &material->albedo, 0, 1);
+                if (material->materialType == MaterialType::Glass) redraw |= ImGui::SliderFloat("Index of Refraction", &material->refractiveIndex, 1, 2);
+                if (material->materialType != MaterialType::Lambertian) redraw |= ImGui::SliderFloat("Roughness", &material->roughness, 0, 1000);
             }
-
-            redraw |= ImGui::ColorEdit3("Colour", (float*)&material->colour);
-            if (material->materialType != MaterialType::Glass) redraw |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.1, 0, 100);
-            //if (material->type != MaterialType::Glass) ImGui::SliderFloat("Albedo", &material->albedo, 0, 1);
-            if (material->materialType == MaterialType::Glass) redraw |= ImGui::SliderFloat("Index of Refraction", &material->refractiveIndex, 1, 2);
-            if (material->materialType != MaterialType::Lambertian) redraw |= ImGui::SliderFloat("Roughness", &material->roughness, 0, 1000);
-
             ImGui::End();
         }
 
@@ -393,6 +396,9 @@ public:
                 if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
                     selectedObject = payload.object->id;
                 }
+                else {
+                    selectedObject = -1;
+                }
             }
 
             ImGui::End();
@@ -417,14 +423,17 @@ public:
 
         for (int y = 0; y < renderSettings.resolution.y; y++) {
             for (int x = 0; x < renderSettings.resolution.x; x++) {
-                //TODO: Put this in the renderer!!
-                Vector2f screenPos = { x / renderSettings.resolution.x, y / renderSettings.resolution.y };
-                Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
-                Ray ray = Ray(scene.camera.position, viewportPos);
-                Object* selected = scene.GetObjects()[selectedObject];
-                RayPayload payload;
-                isSelectedObjectVisible[x][y] = selected->Intersect(ray, 0, FLT_MAX, payload);
-
+                if (selectedObject >= 0) {
+                    Vector2f screenPos = { x / renderSettings.resolution.x, y / renderSettings.resolution.y };
+                    Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
+                    Ray ray = Ray(scene.camera.position, viewportPos);
+                    Object* selected = scene.GetObjects()[selectedObject];
+                    RayPayload payload;
+                    isSelectedObjectVisible[x][y] = selected->Intersect(ray, 0, FLT_MAX, payload);
+                }
+                else {
+                    isSelectedObjectVisible[x][y] = false;
+                }
             }
         }
 
