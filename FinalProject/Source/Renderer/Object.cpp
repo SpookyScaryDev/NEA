@@ -33,7 +33,22 @@ Object* Object::LoadFromJSON(nlohmann::json data) {
         object = (Object*) new Mesh(position, filePath.c_str(), material);
     }
 
+	object->name = data["name"];
+	object->show = data["show"];
+
     return object;
+}
+
+nlohmann::json Object::ToJSON() {
+	json data = json();
+	data["name"] = name;
+	data["position"] = mPosition.ToJSON();
+	data["rotation"] = mRotation.ToJSON();
+	data["scale"] = mScale.ToJSON();
+	data["material"] = material.ToJSON();
+	data["show"] = show;
+
+	return data;
 }
 
 Vector3f Object::GetPosition() const {

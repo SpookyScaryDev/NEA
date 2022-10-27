@@ -23,14 +23,10 @@ Mesh::Mesh(Vector3f position, const char* filePath, Material material) :
 }
 
 nlohmann::json Mesh::ToJSON() {
-	json data = json();
-	data["name"] = name;
+	json data = Object::ToJSON();
 	data["type"] = "mesh";
 	data["path"] = mFilePath;
-	data["position"] = mPosition.ToJSON();
-	data["rotation"] = mRotation.ToJSON();
-	data["scale"] = mScale.ToJSON();
-	data["material"] = material.ToJSON();
+
 
 	return data;
 }

@@ -16,7 +16,7 @@ public:
 	                    Object(Vector3f position, Material material);
 
 	static Object*         LoadFromJSON(nlohmann::json data);
-	virtual nlohmann::json ToJSON() = 0;
+	virtual nlohmann::json ToJSON();
 
 	virtual bool        Intersect(const Ray& ray, float min, float max, RayPayload& payload) = 0;
 

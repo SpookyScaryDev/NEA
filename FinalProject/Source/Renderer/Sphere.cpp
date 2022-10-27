@@ -17,13 +17,9 @@ Sphere::Sphere(Vector3f position, float radius, Material material) :
 }
 
 nlohmann::json Sphere::ToJSON() {
-	json data = json();
-	data["name"] = name;
+	json data = Object::ToJSON();
 	data["type"] = "sphere";
-	data["position"] = mPosition.ToJSON();
-	data["rotation"] = mRotation.ToJSON();
 	data["radius"] = mScale.x;
-	data["material"] = material.ToJSON();
 
 	return data;
 }
