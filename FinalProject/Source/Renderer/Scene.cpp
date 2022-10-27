@@ -24,22 +24,26 @@ Scene Scene::LoadFromFile(const char* filePath) {
     std::ifstream file(filePath);
     json data = json::parse(file);
 
+    scene.SetCamera(Camera::LoadFromJSON(data["camera"]));
     for each (json obj in data["objects"]) {
         std::cout << obj["name"] << std::endl;
         Object* object = Object::LoadFromJSON(obj);
         scene.AddObject(obj["name"].get<std::string>().c_str(), object);
     }
 
+    file.close();
     return scene;
 }
 
 void Scene::SaveToFile(const char* filePath) {
     json data;
+    data["camera"] = camera.ToJSON();
     for each (Object* object in mObjects) {
         data["objects"].push_back(object->ToJSON());
     }
     std::ofstream file(filePath);
     file << std::setw(4) << data << std::endl;
+    file.close();
 }
 
 void Scene::AddObject(const char* name, Object* object) {

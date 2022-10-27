@@ -1,4 +1,13 @@
 {
+    "camera": {
+        "aspectRatio": 1.3333333730697632,
+        "focalLength": 2.0,
+        "position": [
+            0.0,
+            0.12999999523162842,
+            0.800000011920929
+        ]
+    },
     "objects": [
         {
             "material": {
@@ -381,7 +390,7 @@
                 0.0,
                 0.0
             ],
-            "show": false,
+            "show": true,
             "type": "sphere"
         },
         {

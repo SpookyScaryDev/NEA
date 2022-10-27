@@ -3,6 +3,10 @@
 #include <Maths/Vector2f.h>
 #include <Maths/Vector3f.h>
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 namespace Prototype {
 
 Camera::Camera(float aspectRatio, float focalLength, Vector3f pos) {
@@ -17,6 +21,20 @@ void Camera::Create(float aspectRatio, float focalLength, Vector3f pos) {
 	mViewportVertical = { 0, 2, 0 };
 	mViewportHorizontal = { 2 * mAspectRatio, 0, 0 };
 	mViewportBottomLeft = mViewportHorizontal / -2 - mViewportVertical / 2 + Vector3f(0, 0, -mFocalLength);
+}
+
+Camera Camera::LoadFromJSON(json data) {
+	Camera camera(data["aspectRatio"], data["focalLength"], Vector3f::LoadFromJSON(data["position"]));
+	return camera;
+}
+
+json Camera::ToJSON() {
+	json data;
+	data["aspectRatio"] = mAspectRatio;
+	data["focalLength"] = mFocalLength;
+	data["position"] = position.ToJSON();
+
+	return data;
 }
 	
 Vector3f Camera::GetViewportPos(Vector2f screenPos) const {

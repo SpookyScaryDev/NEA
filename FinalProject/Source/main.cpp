@@ -117,8 +117,8 @@ public:
 
         Camera camera = Camera(aspectRatio, 2, { 0,  0.13, 0.8 });
 
-        scene = Scene::LoadFromFile("scene.scene");
         scene.SetCamera(camera);
+        scene = Scene::LoadFromFile("scene.scene");
 
         //scene.SaveToFile("scene.scene");
     }
