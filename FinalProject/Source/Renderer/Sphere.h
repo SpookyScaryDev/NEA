@@ -9,6 +9,8 @@ namespace Prototype {
 class Sphere : Object {
 public:
 	                    Sphere(Vector3f position, float radius, Material material);
+	virtual nlohmann::json ToJSON() override;
+
 	virtual bool        Intersect(const Ray& ray, float min, float max, RayPayload& payload) override;
 
 	float               radius;

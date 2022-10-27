@@ -1,10 +1,15 @@
 #pragma once
 
+#include "nlohmann/json.hpp"
+
 namespace Prototype {
 
 class Vector3f {
 public:
                         Vector3f(float fx = 0.0, float fy = 0.0, float fz = 0.0);
+
+    static Vector3f     LoadFromJSON(nlohmann::json data);
+    nlohmann::json      ToJSON();
 
     void                Set(float fx, float fy, float fz);
 

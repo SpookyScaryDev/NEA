@@ -1,5 +1,12 @@
 #include "Object.h"
 
+#include <Renderer/Sphere.h>
+#include <Renderer/Mesh.h>
+
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 namespace Prototype {
 Object::Object(Vector3f position, Material material) :
 	mPosition(position), material(material), mScale(Vector3f(1, 1, 1)) 
@@ -7,6 +14,26 @@ Object::Object(Vector3f position, Material material) :
 	show = true;
 	mDirty = true;
 	mTransform = Matrix4x4f::Identity();
+}
+
+Object* Object::LoadFromJSON(nlohmann::json data) {
+    std::string type = data["type"];
+    Object* object;
+
+    Vector3f position = Vector3f::LoadFromJSON(data["position"]);
+    Material material = Material::LoadFromJSON(data["material"]);
+
+    if (type == "sphere") {
+        float radius = data["radius"];
+        object = (Object*) new Sphere(position, radius, material);
+    }
+    if (type == "mesh") {
+        Vector3f scale = Vector3f::LoadFromJSON(data["scale"]);
+        std::string filePath = data["path"].get<std::string>();
+        object = (Object*) new Mesh(position, filePath.c_str(), material);
+    }
+
+    return object;
 }
 
 Vector3f Object::GetPosition() const {

@@ -7,11 +7,17 @@
 #include <Renderer/RayPayload.h>
 #include <Renderer/Material.h>
 
+#include <nlohmann/json.hpp>
+
 namespace Prototype {
 
 class Object {
 public:
 	                    Object(Vector3f position, Material material);
+
+	static Object*         LoadFromJSON(nlohmann::json data);
+	virtual nlohmann::json ToJSON() = 0;
+
 	virtual bool        Intersect(const Ray& ray, float min, float max, RayPayload& payload) = 0;
 
 	Vector3f            GetPosition() const;

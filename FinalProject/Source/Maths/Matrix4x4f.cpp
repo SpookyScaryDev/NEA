@@ -3,6 +3,7 @@
 #define _USE_MATH_DEFINES
 #include <Error.h>
 #include <cmath>
+#include <math.h>
 
 namespace Prototype {
     Matrix4x4f::Matrix4x4f() {

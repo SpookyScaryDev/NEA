@@ -9,12 +9,30 @@
 #include <iostream>
 #include <string>
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 namespace Prototype {
 
 Mesh::Mesh(Vector3f position, const char* filePath, Material material) :
 	Object(position, material)
 {
+	mFilePath = filePath;
 	LoadFromFile(filePath);
+}
+
+nlohmann::json Mesh::ToJSON() {
+	json data = json();
+	data["name"] = name;
+	data["type"] = "mesh";
+	data["path"] = mFilePath;
+	data["position"] = mPosition.ToJSON();
+	data["rotation"] = mRotation.ToJSON();
+	data["scale"] = mScale.ToJSON();
+	data["material"] = material.ToJSON();
+
+	return data;
 }
 
 void Mesh::LoadFromFile(const char* filePath) {

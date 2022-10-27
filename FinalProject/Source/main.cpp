@@ -53,7 +53,7 @@ public:
 
         SDL_SetTextureScaleMode(finalImage->GetRawTexture(), SDL_ScaleModeBest);
 
-        selectedObject = 12;
+        selectedObject = 0;
 
         GenerateScene();
     }
@@ -64,6 +64,7 @@ public:
 
         Material ground = Material(MaterialType::Lambertian, { 0.5, 0.5, 0.5 });
         scene.AddObject("Ground", (Object*) new Sphere({ 0, -1000, -2 }, 1000, ground));
+
 
         // Add random objects.
         for (int i = -1; i <= 1; i += 1) {
@@ -116,7 +117,10 @@ public:
 
         Camera camera = Camera(aspectRatio, 2, { 0,  0.13, 0.8 });
 
+        scene = Scene::LoadFromFile("scene.scene");
         scene.SetCamera(camera);
+
+        //scene.SaveToFile("scene.scene");
     }
 
     void SetUpImGui() {

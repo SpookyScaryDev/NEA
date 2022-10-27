@@ -27,6 +27,7 @@ project "FinalProject"
         "../Vendor/SDL2/include",
         "../Vendor/imgui",
         "../Vendor/imgui/backends",
+        "../Vendor/json/single_include",
 
         "Source"
     }

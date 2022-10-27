@@ -8,6 +8,10 @@
 #include <Renderer/RayPayload.h>
 #include <cstdlib>
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 namespace Prototype {
 
 Material::Material(MaterialType type, Colour colour, float roughness, float refractiveIndex, float emitted) :
@@ -16,6 +20,36 @@ Material::Material(MaterialType type, Colour colour, float roughness, float refr
     roughness(roughness),
     refractiveIndex(refractiveIndex),
     emitted(emitted) {}
+
+Material Material::LoadFromJSON(nlohmann::json data) {
+    Material material;
+
+    std::string type = data["type"];
+    if (type == "lambertian") material.materialType = MaterialType::Lambertian;
+    if (type == "specular") material.materialType = MaterialType::Glossy;
+    if (type == "glass") material.materialType = MaterialType::Glass;
+
+    material.colour = Vector3f::LoadFromJSON(data["colour"]);
+    material.roughness = data["roughness"];
+    material.refractiveIndex = data["refractiveIndex"];
+    material.emitted = data["emitted"];
+
+    return material;
+}
+
+nlohmann::json Material::ToJSON() {
+    json data;
+
+    if (materialType == MaterialType::Lambertian) data["type"] = "lambertian";
+    if (materialType == MaterialType::Glossy) data["type"] = "specular";
+    if (materialType == MaterialType::Glass) data["type"] = "glass";
+    data["colour"] = colour.ToJSON();
+    data["roughness"] = roughness;
+    data["refractiveIndex"] = refractiveIndex;
+    data["emitted"] = emitted;
+
+    return data;
+}
 
 bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPayload& payload, std::mt19937& rnd) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);

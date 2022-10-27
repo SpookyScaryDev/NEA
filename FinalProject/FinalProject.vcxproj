@@ -79,7 +79,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WINDOWS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Vendor\SDL2\include;..\Vendor\imgui;..\Vendor\imgui\backends;Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Vendor\SDL2\include;..\Vendor\imgui;..\Vendor\imgui\backends;..\Vendor\json\single_include;Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -100,7 +100,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WINDOWS;DEVELOPMENT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Vendor\SDL2\include;..\Vendor\imgui;..\Vendor\imgui\backends;Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Vendor\SDL2\include;..\Vendor\imgui;..\Vendor\imgui\backends;..\Vendor\json\single_include;Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -125,8 +125,8 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WINDOWS;SHIP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\Vendor\SDL2\include;..\Vendor\imgui;..\Vendor\imgui\backends;Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\Vendor\SDL2\include;..\Vendor\imgui;..\Vendor\imgui\backends;..\Vendor\json\single_include;Source;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MinimalRebuild>false</MinimalRebuild>
@@ -148,23 +148,23 @@
   <ItemGroup>
     <ClInclude Include="..\Vendor\imgui\backends\imgui_impl_sdl.h" />
     <ClInclude Include="..\Vendor\imgui\backends\imgui_impl_sdlrenderer.h" />
-    <ClInclude Include="Source\Maths\Matrix4x4f.h" />
-    <ClInclude Include="Source\Renderer\Mesh.h" />
     <ClInclude Include="Source\Application\Application.h" />
     <ClInclude Include="Source\Error.h" />
+    <ClInclude Include="Source\Maths\Matrix4x4f.h" />
     <ClInclude Include="Source\Maths\Ray.h" />
     <ClInclude Include="Source\Maths\Vector2f.h" />
     <ClInclude Include="Source\Maths\Vector3f.h" />
     <ClInclude Include="Source\Renderer\Camera.h" />
     <ClInclude Include="Source\Renderer\Material.h" />
+    <ClInclude Include="Source\Renderer\Mesh.h" />
     <ClInclude Include="Source\Renderer\Object.h" />
     <ClInclude Include="Source\Renderer\RayPayload.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />
     <ClInclude Include="Source\Renderer\Scene.h" />
     <ClInclude Include="Source\Renderer\Sphere.h" />
     <ClInclude Include="Source\Renderer\Texture.h" />
-    <ClInclude Include="Source\Window\Window.h" />
     <ClInclude Include="Source\Renderer\Triangle.h" />
+    <ClInclude Include="Source\Window\Window.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Vendor\imgui\backends\imgui_impl_sdl.cpp" />
@@ -174,22 +174,22 @@
     <ClCompile Include="..\Vendor\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\Vendor\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\Vendor\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="Source\Maths\Matrix4x4f.cpp" />
-    <ClCompile Include="Source\Renderer\Mesh.cpp" />
     <ClCompile Include="Source\Application\Application.cpp" />
+    <ClCompile Include="Source\Maths\Matrix4x4f.cpp" />
     <ClCompile Include="Source\Maths\Ray.cpp" />
     <ClCompile Include="Source\Maths\Vector2f.cpp" />
     <ClCompile Include="Source\Maths\Vector3f.cpp" />
     <ClCompile Include="Source\Renderer\Camera.cpp" />
     <ClCompile Include="Source\Renderer\Material.cpp" />
+    <ClCompile Include="Source\Renderer\Mesh.cpp" />
     <ClCompile Include="Source\Renderer\Object.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Scene.cpp" />
     <ClCompile Include="Source\Renderer\Sphere.cpp" />
     <ClCompile Include="Source\Renderer\Texture.cpp" />
+    <ClCompile Include="Source\Renderer\Triangle.cpp" />
     <ClCompile Include="Source\Window\Window.cpp" />
     <ClCompile Include="Source\main.cpp" />
-    <ClCompile Include="Source\Renderer\Triangle.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

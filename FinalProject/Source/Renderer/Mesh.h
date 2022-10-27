@@ -9,11 +9,15 @@ namespace Prototype {
 class Mesh : Object {
 public:
 	                         Mesh(Vector3f position, const char* filePath, Material material);
+	virtual nlohmann::json   ToJSON() override;
 	void                     LoadFromFile(const char* filePath);
+
 	virtual bool             Intersect(const Ray& ray, float min, float max, RayPayload& payload) override;
 
 private:
 	std::vector<std::string> Split(const std::string& string, char character); // TODO: rethink this
+
+	const char*              mFilePath;
 
 	std::vector<Triangle*>   mFaces;
 	Vector3f                 mMin;    // For AABB. TODO: don't leave this here!

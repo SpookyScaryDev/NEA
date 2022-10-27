@@ -6,6 +6,8 @@
 #include <Renderer/RayPayload.h>
 #include <random>
 
+#include <nlohmann/json.hpp>
+
 namespace Prototype {
 
 enum class MaterialType {
@@ -17,6 +19,9 @@ enum class MaterialType {
 class Material {
 public:
                         Material(MaterialType type = MaterialType::Lambertian, Colour colour = Vector3f(), float roughness = 1, float refractiveIndex = 1.5, float emitted = 0);
+
+    static Material     LoadFromJSON(nlohmann::json data);
+    nlohmann::json      ToJSON();
 
     bool                Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPayload& payload, std::mt19937& rnd); // Determines if a ray will scatter.
     Colour              Emit();                                                                                           // The colour emitted if the material emits light.

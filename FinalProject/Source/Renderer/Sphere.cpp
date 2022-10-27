@@ -3,6 +3,10 @@
 #include <math.h>
 #include <Renderer/Material.h>
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 namespace Prototype {
 
 Sphere::Sphere(Vector3f position, float radius, Material material) :
@@ -10,6 +14,18 @@ Sphere::Sphere(Vector3f position, float radius, Material material) :
 	Object(position, material)
 {
 	mScale = radius;
+}
+
+nlohmann::json Sphere::ToJSON() {
+	json data = json();
+	data["name"] = name;
+	data["type"] = "sphere";
+	data["position"] = mPosition.ToJSON();
+	data["rotation"] = mRotation.ToJSON();
+	data["radius"] = mScale.x;
+	data["material"] = material.ToJSON();
+
+	return data;
 }
 
 bool Sphere::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
