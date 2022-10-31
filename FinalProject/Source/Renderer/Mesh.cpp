@@ -27,7 +27,6 @@ nlohmann::json Mesh::ToJSON() {
 	data["type"] = "mesh";
 	data["path"] = mFilePath;
 
-
 	return data;
 }
 

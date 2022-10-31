@@ -18,11 +18,13 @@
 
 #include <Error.h>
 
+#include <nfd.h>
+
 using namespace Prototype;
 
 class PrototypeApp : public Application {
 public:
-    PrototypeApp() : Application("Ray Tracing Optics Simulator", 1100, 720) {
+    PrototypeApp(const char* file) : Application("Ray Tracing Optics Simulator", 1100, 720) {
         SetUpImGui();
 
         width = 300;
@@ -55,7 +57,9 @@ public:
 
         selectedObject = -1;
 
-        GenerateScene();
+        if (file) std::cout << file << std::endl;
+        if (!file) GenerateScene();
+        else scene = scene.LoadFromFile(file);
     }
 
     void GenerateScene() {
@@ -117,7 +121,7 @@ public:
 
         Camera camera = Camera(aspectRatio, 2, { 0,  0.13, 0.8 });
 
-        scene.SetCamera(camera);
+        //scene.SetCamera(camera);
         scene = Scene::LoadFromFile("scene.scene");
 
         //scene.SaveToFile("scene.scene");
@@ -193,10 +197,25 @@ public:
         {
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("File")) {
-                    ImGui::MenuItem("New");
-                    ImGui::MenuItem("Save");
-                    ImGui::MenuItem("Save As");
-                    ImGui::MenuItem("Open");
+                    if (ImGui::MenuItem("New")) {
+                        redraw = true;
+                        scene = Scene();
+                    }
+                    if (ImGui::MenuItem("Save")) {
+                        if (scene.GetName() != "") scene.Save();
+                        else scene.SaveToFile("sdjfslkdjf"); // TODO
+                    }
+                    if (ImGui::MenuItem("Save As")) {
+                        nfdchar_t* path = NULL;
+                        nfdresult_t result = NFD_SaveDialog("scene", NULL, &path);
+                        scene.SaveToFile((path + std::string(".scene")).c_str());
+                    }
+                    if (ImGui::MenuItem("Open")) {
+                        nfdchar_t* path = NULL;
+                        nfdresult_t result = NFD_OpenDialog("scene", NULL, &path);
+                        scene = scene.LoadFromFile(path);
+                        redraw = true;
+                    }
                     ImGui::EndMenu();
                 }
 
@@ -410,6 +429,14 @@ public:
     }
 
     void Update(float deltaTime) {
+        std::string title = "Ray Tracing Optics Simulator: ";
+        if (scene.GetName() != "") title += scene.GetName();
+        else title += "unnamed";
+        if (scene.IsModified()) title += "*";
+        GetWindow()->SetTitle(title.c_str());
+
+        if (redraw) scene.SetModified();
+
         // Start rendering again from scratch if settings are changed.
         if (redraw) frame = 1;
         redraw = false;
@@ -528,9 +555,9 @@ private:
     float rendererFps;
 };
 
-int main(int, char**) {
+int main(int argc, char* argv[]) {
 
-    Application* app = new PrototypeApp();
+    Application* app = new PrototypeApp(argv[1]);
     app->Run();
 
     return 0;

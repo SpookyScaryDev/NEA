@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 #include <Renderer/Object.h>
 #include <Renderer/Camera.h>
@@ -13,9 +14,15 @@ namespace Prototype {
 class Scene {
 public:
                            Scene();
+                           Scene(const char* name);
 
     static Scene           LoadFromFile(const char* filePath);
+    void                   Save();
     void                   SaveToFile(const char* filePath);
+
+    std::string            GetName() const;
+    void                   SetModified();
+    bool                   IsModified() const;
 
     void                   AddObject(const char* name, Object* object);
     int                    GetObjectCount() const;
@@ -25,7 +32,9 @@ public:
 
     Camera                 camera;
 private:
+    bool                   mModified;
     std::vector<Object*>   mObjects;
+    std::string            mFilePath;
 };
 
 }

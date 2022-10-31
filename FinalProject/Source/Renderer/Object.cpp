@@ -28,13 +28,14 @@ Object* Object::LoadFromJSON(nlohmann::json data) {
         object = (Object*) new Sphere(position, radius, material);
     }
     if (type == "mesh") {
-        Vector3f scale = Vector3f::LoadFromJSON(data["scale"]);
         std::string filePath = data["path"].get<std::string>();
         object = (Object*) new Mesh(position, filePath.c_str(), material);
+		object->SetScale(Vector3f::LoadFromJSON(data["scale"]));
     }
 
 	object->name = data["name"];
 	object->show = data["show"];
+	object->SetRotation(Vector3f::LoadFromJSON(data["rotation"]));
 
     return object;
 }

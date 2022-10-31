@@ -28,17 +28,20 @@ project "FinalProject"
         "../Vendor/imgui",
         "../Vendor/imgui/backends",
         "../Vendor/json/single_include",
+        "../Vendor/NFD/src/include",
 
         "Source"
     }
 
     libdirs {
         "../Vendor/SDL2/lib/x64",
+        "../Vendor/NFD/build/lib/Release/x64",
     }
 
     links {
         "SDL2",
         "SDL2main",
+        "nfd"
     }
  
     prebuildcommands {

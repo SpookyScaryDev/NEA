@@ -43,4 +43,8 @@ SDL_Window* Window::GetRawWindow() {
     return mRawSDLWindow;
 }
 
+void Window::SetTitle(const char* name) {
+    SDL_SetWindowTitle(mRawSDLWindow, name);
+}
+
 }

@@ -15,6 +15,8 @@ public:
 
     SDL_Window*         GetRawWindow();
 
+    void                SetTitle(const char* name);
+
 private:
     SDL_Window*         mRawSDLWindow;
     int                 mWidth;

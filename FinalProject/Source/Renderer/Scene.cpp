@@ -19,23 +19,33 @@ namespace Prototype {
 
 Scene::Scene() {}
 
+Scene::Scene(const char* filePath) : mFilePath(filePath)
+{
+    mModified = false;
+}
+
 Scene Scene::LoadFromFile(const char* filePath) {
-    Scene scene;
+    Scene scene(filePath);
     std::ifstream file(filePath);
     json data = json::parse(file);
 
+    std::cout << "Loading " << filePath << std::endl;
+    std::cout << "************************************************************" << std::endl;
+
     scene.SetCamera(Camera::LoadFromJSON(data["camera"]));
     for each (json obj in data["objects"]) {
-        std::cout << obj["name"] << std::endl;
+        std::cout << "Loading object " << obj["name"].get<std::string>() << std::endl;
         Object* object = Object::LoadFromJSON(obj);
         scene.AddObject(obj["name"].get<std::string>().c_str(), object);
     }
 
+    std::cout << "************************************************************" << std::endl;
     file.close();
     return scene;
 }
 
 void Scene::SaveToFile(const char* filePath) {
+    mModified = false;
     json data;
     data["camera"] = camera.ToJSON();
     for each (Object* object in mObjects) {
@@ -44,6 +54,25 @@ void Scene::SaveToFile(const char* filePath) {
     std::ofstream file(filePath);
     file << std::setw(4) << data << std::endl;
     file.close();
+}
+
+std::string Scene::GetName() const {
+    std::string name = mFilePath;
+    name = name.substr(name.find_last_of("/\\") + 1); // Remove path.
+    name = name.substr(0, name.find_last_of('.')); // Remove extension.
+    return name.c_str();
+}
+
+void Scene::SetModified() {
+    mModified = true;
+}
+
+bool Scene::IsModified() const {
+    return mModified;
+}
+
+void Scene::Save() {
+    SaveToFile(mFilePath.c_str());
 }
 
 void Scene::AddObject(const char* name, Object* object) {

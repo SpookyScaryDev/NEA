@@ -12,6 +12,6 @@ workspace "NEA"
         "Ship"
     }
 
+include "FinalProject/premake5.lua"
 include "Prototype/premake5.lua"
 include "UIMockup/premake5.lua"
-include "FinalProject/premake5.lua"

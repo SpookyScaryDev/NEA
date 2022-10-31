@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 #include <Renderer/Object.h>
 #include <Renderer/Triangle.h>
@@ -17,7 +18,7 @@ public:
 private:
 	std::vector<std::string> Split(const std::string& string, char character); // TODO: rethink this
 
-	const char*              mFilePath;
+	std::string              mFilePath;
 
 	std::vector<Triangle*>   mFaces;
 	Vector3f                 mMin;    // For AABB. TODO: don't leave this here!
