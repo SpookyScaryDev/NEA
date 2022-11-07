@@ -25,6 +25,7 @@ public:
     bool                   IsModified() const;
 
     void                   AddObject(const char* name, Object* object);
+    void                   RemoveObject(Object* object);
     int                    GetObjectCount() const;
     void                   SetCamera(const Camera& cam);
     std::vector<Object*>&  GetObjects();

@@ -18,7 +18,7 @@ enum class MaterialType {
 
 class Material {
 public:
-                        Material(MaterialType type = MaterialType::Lambertian, Colour colour = Vector3f(), float roughness = 1, float refractiveIndex = 1.5, float emitted = 0);
+                        Material(MaterialType type = MaterialType::Lambertian, Colour colour = Vector3f(0.9, 0.9, 0.9), float roughness = 1, float refractiveIndex = 1.5, float emitted = 0);
 
     static Material     LoadFromJSON(nlohmann::json data);
     nlohmann::json      ToJSON();

@@ -72,7 +72,7 @@ bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPaylo
     case MaterialType::Glossy: {
         // Reflects according to Snell's law, with randomization determined by roughness.
         Vector3f direction = Reflect(incoming.GetDirection(), payload.normal);
-        direction = SampleDirectionInPhong(direction, rnd);
+        if (roughness > 0) direction = SampleDirectionInPhong(direction, rnd);
         //direction += roughness * RandomInUnitHemisphere(direction, rnd);
         direction.Normalize();
         out = Ray(payload.point, direction);
@@ -222,6 +222,7 @@ Vector3f Material::SampleDirectionInHemisphere(const Vector3f& normal, std::mt19
     direction.y = sqrt(bilinearDistribution[0]) * sin(2 * M_PI * bilinearDistribution[1]);
     direction.z = sqrt(1 - bilinearDistribution[0]);
     direction.Normalize();
+    if (direction.Dot(Vector3f(0, 0, 1)) <= 0) direction = Vector3f(0, 0, 1);
 
     return TransformSample(direction, normal);
 }

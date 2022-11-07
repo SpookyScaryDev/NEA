@@ -5,6 +5,8 @@
 #include <iostream>
 #include <SDL.h>
 
+#include <fstream>
+#include <string>
 #include <thread>
 #include <vector>
 
@@ -49,17 +51,21 @@ public:
         ambientLightColour = { renderSettings.ambientLight.x, renderSettings.ambientLight.y, renderSettings.ambientLight.z, 1 };
 
         redraw = false;
+        loadedNewFile = true;
 
         // The image which will be rendered on the GUI.
         finalImage = new Texture(width, height);
 
         SDL_SetTextureScaleMode(finalImage->GetRawTexture(), SDL_ScaleModeBest);
 
-        selectedObject = -1;
-
         if (file) std::cout << file << std::endl;
         if (!file) GenerateScene();
         else scene = scene.LoadFromFile(file);
+
+        selectedObject = -1;
+        newObjectType = 0;
+        newObjectPath = "";
+        newObjectName = "Object " + std::to_string(scene.GetObjectCount());
     }
 
     void GenerateScene() {
@@ -164,6 +170,8 @@ public:
             ImGui::StyleColorsLight();
         }
 
+        style.Colors[ImGuiCol_PopupBg] = style.Colors[ImGuiCol_WindowBg];
+
         //for (int i = 0; i <= ImGuiCol_COUNT; i++) {
         //    ImGuiCol_ colourID = (ImGuiCol_)i;
         //    ImVec4& colour = style.Colors[i];
@@ -186,6 +194,59 @@ public:
         //}
     }
 
+    bool OpenFile(std::string fileterList, std::string& filePath) {
+        nfdchar_t* path = NULL;
+        nfdresult_t result = NFD_OpenDialog(fileterList.c_str(), NULL, &path);
+        if (result == nfdresult_t::NFD_ERROR) {
+            Error(std::string("Failed to load file! ") + NFD_GetError());
+            return false;
+        }
+        if (result == nfdresult_t::NFD_CANCEL) return false;
+
+        filePath = path;
+        return true;
+    }
+
+    bool SaveAs(std::string fileterList, std::string& filePath) {
+        nfdchar_t* path = NULL;
+        nfdresult_t result = NFD_SaveDialog(fileterList.c_str(), NULL, &path);
+        if (result == nfdresult_t::NFD_ERROR) {
+            Error(std::string("Failed to save file! ") + NFD_GetError());
+            return false;
+        }
+        if (result == nfdresult_t::NFD_CANCEL) return false;
+
+        filePath = path;
+        return true;
+    }
+
+
+    void New() {
+        redraw = true;
+        scene = Scene();
+    }
+
+    void Save() {
+        if (scene.GetName() != "") scene.Save();
+        else SaveSceneAs();
+    }
+
+    void SaveSceneAs() {
+        std::string path;
+        if (SaveAs("scene", path)) {
+            scene.SaveToFile((path + std::string(".scene")).c_str());
+        }
+    }
+
+    void OpenScene() {
+        std::string path;
+        if (OpenFile("scene", path)) {
+            scene = scene.LoadFromFile(path.c_str());
+            redraw = true;
+            loadedNewFile = true;
+        }
+    }
+
     void UpdateImGui() {
         ImGui_ImplSDLRenderer_NewFrame();
         ImGui_ImplSDL2_NewFrame();
@@ -198,23 +259,16 @@ public:
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("File")) {
                     if (ImGui::MenuItem("New")) {
-                        redraw = true;
-                        scene = Scene();
+                        New();
                     }
                     if (ImGui::MenuItem("Save")) {
-                        if (scene.GetName() != "") scene.Save();
-                        else scene.SaveToFile("sdjfslkdjf"); // TODO
+                        Save();
                     }
                     if (ImGui::MenuItem("Save As")) {
-                        nfdchar_t* path = NULL;
-                        nfdresult_t result = NFD_SaveDialog("scene", NULL, &path);
-                        scene.SaveToFile((path + std::string(".scene")).c_str());
+                        SaveSceneAs();
                     }
                     if (ImGui::MenuItem("Open")) {
-                        nfdchar_t* path = NULL;
-                        nfdresult_t result = NFD_OpenDialog("scene", NULL, &path);
-                        scene = scene.LoadFromFile(path);
-                        redraw = true;
+                        OpenScene();
                     }
                     ImGui::EndMenu();
                 }
@@ -226,8 +280,7 @@ public:
         // FPS overlay
         {
             ImGui::SetNextWindowBgAlpha(0.35f);
-            ImGui::Begin("Example: Simple overlay", (bool*)1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
-            //ImGui::Text("Renderer API: direct 3d");
+            ImGui::Begin("Overlay", (bool*)1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::Text("Renderer: %.3f ms/frame (%.1f FPS)", rendererFps * 1000, 1000/(rendererFps * 1000));
             ImGui::End();
@@ -235,7 +288,7 @@ public:
 
         // Camera position
         {
-            ImGui::Begin("Camera", (bool*)1);
+            ImGui::Begin("Camera");
             redraw |= ImGui::DragFloat3("Position", (float*)&scene.camera.position, 0.01);
             //ImGui::DragFloat3("Rotation", (float*)&obj->rotation, 0.5);
 
@@ -244,16 +297,79 @@ public:
 
         // Object selection window.
         {
-            ImGui::Begin("Objects", (bool*)1);
+            ImGui::Begin("Objects");
             if (ImGui::Button("Add New Object", { ImGui::GetWindowWidth(), 20 })) {
                 //scene.AddObject(GenerateRandomObject());
                 ImGui::OpenPopup("Add Object");
             }
 
+            ImGui::SetNextWindowPos(ImVec2(GetWindow()->GetWidth() / 2, GetWindow()->GetHeight() / 2), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
             if (ImGui::BeginPopup("Add Object")) {
-                if (ImGui::Button("Ok")) {
-                    ImGui::CloseCurrentPopup();
+
+                char nameBuffer[100];
+                sprintf_s(nameBuffer, newObjectName.c_str(), 100);
+                ImGui::InputText("Name", nameBuffer, 100);
+                newObjectName = nameBuffer;
+
+                const char* objectTypes[] = { "Sphere", "Cube", "3D Model" };
+                if (ImGui::BeginCombo("Material Type", objectTypes[newObjectType])) {
+                    for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
+                        const bool selected = (newObjectType == i);
+                        if (ImGui::Selectable(objectTypes[i], selected)) {
+                            newObjectType = i;
+                        }
+
+                        if (selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
                 }
+
+                bool valid = true;
+
+                if (objectTypes[newObjectType] == "3D Model") {
+                    char buffer[100];
+                    sprintf_s(buffer, newObjectPath.c_str(), newObjectPath.length());
+                    std::ifstream file(newObjectPath);
+                    valid = file.good();
+                    if (!valid) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                    ImGui::InputText("File Path", buffer, 100);
+                    if (!valid) ImGui::PopStyleColor();
+                    newObjectPath = buffer;
+
+                    if (ImGui::Button("Browse for file")) {
+                        nfdchar_t* path = NULL;
+                        nfdresult_t result = NFD_OpenDialog("obj", NULL, &path);
+                        newObjectPath = path;
+                    }
+                }
+
+                if (ImGui::Button("Ok") && valid) {
+                    ImGui::CloseCurrentPopup();
+                    Object* object;
+
+                    if (objectTypes[newObjectType] == "Sphere") {
+                        object = (Object*) new Sphere(Vector3f(), 0.5, Material());
+                    }
+                    else if (objectTypes[newObjectType] == "Cube") {
+                        object = (Object*) new Mesh({ 0, 0, 0 }, "Cube.obj", Material());
+                    }
+                    else if (objectTypes[newObjectType] == "3D Model") {
+                        object = (Object*) new Mesh({ 0, 0, 0 }, newObjectPath.c_str(), Material());
+                    }
+
+                    redraw = true;
+                    scene.AddObject(newObjectName.c_str(), object);
+                    selectedObject = scene.GetObjectCount() - 1;
+                    newObjectName = "Object " + std::to_string(scene.GetObjectCount());
+                    newObjectPath = "";
+                    newObjectType = 0;
+                }
+                if (!valid && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+
+                ImGui::SameLine();
+                if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
+
                 ImGui::EndPopup();
             }
 
@@ -282,7 +398,7 @@ public:
 
         // Pannel to edit currently selected object.
         {
-            ImGui::Begin("Object Properties", (bool*)1);
+            ImGui::Begin("Object Properties");
 
             if (selectedObject >= 0) {
                 Object* obj = scene.GetObjects()[selectedObject];
@@ -290,7 +406,7 @@ public:
                 char buffer[32];
                 sprintf_s(buffer, obj->name.c_str(), obj->name.length());
 
-                ImGui::InputText("Name", buffer, 100);
+                ImGui::InputText("Name", buffer, 32);
 
                 Vector3f position = obj->GetPosition();
                 Vector3f rotation = obj->GetRotation();
@@ -316,13 +432,19 @@ public:
                 }
 
                 obj->name = std::string(buffer);
+
+                if (ImGui::Button("Delete")) {
+                    scene.RemoveObject(obj);
+                    selectedObject--;
+                    redraw = true;
+                }
             }
             ImGui::End();
         }
 
         // Pannel to edit the material of the currently selected object.
         {
-            ImGui::Begin("Material Editor", (bool*)1);
+            ImGui::Begin("Material Editor");
 
             if (selectedObject >= 0) {
                 Object* obj = scene.GetObjects()[selectedObject];
@@ -356,7 +478,7 @@ public:
 
         // Pannel to set the renderer configuration.
         {
-            ImGui::Begin("Render Settings", (bool*)1);
+            ImGui::Begin("Render Settings");
             if (ImGui::BeginTabBar("Render Settings Tab Bar")) {
                 if (ImGui::BeginTabItem("Preview")) {
                     redraw |= ImGui::SliderInt("Max Depth", &renderSettings.maxDepth, 1, 100);
@@ -389,7 +511,7 @@ public:
 
         // The window which contains the renderer output.
         {
-            ImGui::Begin("Scene", (bool*)1);
+            ImGui::Begin("Scene");
             ImGui::SetItemAllowOverlap();
 
             SDL_Point size;
@@ -406,7 +528,7 @@ public:
             //    ImVec2((int)(ImGui::GetCursorScreenPos().x + size.x * scale), (int)(ImGui::GetCursorScreenPos().y + size.y * scale)));
             ImGui::Image((void*)(intptr_t)finalImage->GetRawTexture(), ImVec2(size.x * scale, size.y * scale));
 
-            if (ImGui::IsMouseClicked(0) && ImGui::IsMouseHoveringRect(imageStartScreen, { imageStartScreen.x + size.x * scale, imageStartScreen.y + size.y * scale })) {
+            if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && ImGui::IsMouseHoveringRect(imageStartScreen, { imageStartScreen.x + size.x * scale, imageStartScreen.y + size.y * scale })) {
                 ImVec2 pos = ImGui::GetMousePos();
                 Vector2f relativePos = { (pos.x - imageStartScreen.x) / (scale * size.x), (pos.y - imageStartScreen.y) / (scale * size.y) };
                 Vector3f viewportPos = scene.camera.GetViewportPos(relativePos);
@@ -422,7 +544,6 @@ public:
 
             ImGui::End();
         }
-
         ImGui::Render();
         ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
 
@@ -435,7 +556,8 @@ public:
         if (scene.IsModified()) title += "*";
         GetWindow()->SetTitle(title.c_str());
 
-        if (redraw) scene.SetModified();
+        if (redraw && !loadedNewFile) scene.SetModified();
+        loadedNewFile = false;
 
         // Start rendering again from scratch if settings are changed.
         if (redraw) frame = 1;
@@ -517,13 +639,28 @@ public:
 
         // Process input for ImGui.
         SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
+        while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
-            if (event.type == SDL_QUIT)
+            if (event.type == SDL_QUIT) {
                 mIsRunning = false;
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(GetWindow()->GetRawWindow()))
+            }
+            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(GetWindow()->GetRawWindow())) {
                 mIsRunning = false;
+            }
+        }
+
+        const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
+        if (keyboardState[SDL_SCANCODE_LCTRL] && keyboardState[SDL_SCANCODE_LSHIFT] && keyboardState[SDL_SCANCODE_S]) {
+            SaveSceneAs();
+        }
+        else if (keyboardState[SDL_SCANCODE_LCTRL] && keyboardState[SDL_SCANCODE_S]) {
+            Save();
+        }
+        else if (keyboardState[SDL_SCANCODE_LCTRL] && keyboardState[SDL_SCANCODE_O]) {
+            OpenScene();
+        }
+        else if (keyboardState[SDL_SCANCODE_LCTRL] && keyboardState[SDL_SCANCODE_N]) {
+            New();
         }
 
         // Draw the interface.
@@ -547,9 +684,13 @@ private:
     int frame = 0;        // Frame referes to the number of frames that nothing has changed, used for temporal anti-aliasing.
 
     // UI state:
+    std::string newObjectName;
+    int newObjectType;
+    std::string newObjectPath;
     int selectedObject;
 
     bool redraw;
+    bool loadedNewFile;
     ImVec4 ambientLightColour;
 
     float rendererFps;

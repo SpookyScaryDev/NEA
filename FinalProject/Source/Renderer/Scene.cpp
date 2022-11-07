@@ -54,6 +54,7 @@ void Scene::SaveToFile(const char* filePath) {
     std::ofstream file(filePath);
     file << std::setw(4) << data << std::endl;
     file.close();
+    mFilePath = filePath;
 }
 
 std::string Scene::GetName() const {
@@ -79,6 +80,10 @@ void Scene::AddObject(const char* name, Object* object) {
     object->name = name;
     object->id = GetObjectCount();
     mObjects.push_back(object);
+}
+
+void Scene::RemoveObject(Object* object) {
+    mObjects.erase(std::remove(mObjects.begin(), mObjects.end(), object));
 }
 
 int Scene::GetObjectCount() const {
