@@ -78,12 +78,15 @@ void Scene::Save() {
 
 void Scene::AddObject(const char* name, Object* object) {
     object->name = name;
-    object->id = GetObjectCount();
     mObjects.push_back(object);
 }
 
 void Scene::RemoveObject(Object* object) {
     mObjects.erase(std::remove(mObjects.begin(), mObjects.end(), object));
+}
+
+int Scene::GetObjectID(Object* object) const {
+    return std::find(mObjects.begin(), mObjects.end(), object) - mObjects.begin();
 }
 
 int Scene::GetObjectCount() const {
@@ -98,7 +101,15 @@ std::vector<Object*>& Scene::GetObjects() {
     return mObjects;
 }
 
-bool Scene::ClosestHit(const Ray& ray, float min, float max, RayPayload& payload) {
+std::vector<Object*> Scene::GetLights() const {
+    std::vector<Object*> lights;
+    for each (Object* obj in mObjects) {
+        if (obj->material.emitted != 0) lights.push_back(obj);
+    }
+    return lights;
+}
+
+bool Scene::ClosestHit(const Ray& ray, float min, float max, RayPayload& payload) const{
     RayPayload closestPayload;
     RayPayload tempPayload;
     float closestT = max;

@@ -386,7 +386,7 @@ public:
                 redraw |= ImGui::Checkbox(buf, &obj->show);
 
                 ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 3 + 35));
-                sprintf(buf, (std::string("##object_id_") + std::to_string(obj->id)).c_str(), n + 1);
+                sprintf(buf, (std::string("##object_id_") + std::to_string(scene.GetObjectID(obj))).c_str(), n + 1);
                 if (ImGui::Selectable(buf, selectedObject == n))
                     selectedObject = n; // Set currently selected object.
                 ImGui::SameLine();
@@ -535,7 +535,7 @@ public:
                 Ray ray = Ray(scene.camera.position, viewportPos);
                 RayPayload payload;
                 if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
-                    selectedObject = payload.object->id;
+                    selectedObject = scene.GetObjectID(payload.object);
                 }
                 else {
                     selectedObject = -1;

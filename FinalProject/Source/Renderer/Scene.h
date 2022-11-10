@@ -26,10 +26,12 @@ public:
 
     void                   AddObject(const char* name, Object* object);
     void                   RemoveObject(Object* object);
+    int                    GetObjectID(Object* object) const;
     int                    GetObjectCount() const;
     void                   SetCamera(const Camera& cam);
     std::vector<Object*>&  GetObjects();
-    bool                   ClosestHit(const Ray& ray, float min, float max, RayPayload& payload); // Returns true if something is hit. Details are stored in the payload.
+    std::vector<Object*>   GetLights() const;
+    bool                   ClosestHit(const Ray& ray, float min, float max, RayPayload& payload) const; // Returns true if something is hit. Details are stored in the payload.
 
     Camera                 camera;
 private:

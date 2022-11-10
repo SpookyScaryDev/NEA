@@ -31,7 +31,6 @@ public:
 
 	Material            material;
 	bool                show;
-	int                 id;
 	std::string         name;
 
 protected:

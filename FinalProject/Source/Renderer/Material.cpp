@@ -126,14 +126,16 @@ float Material::GetPDF(const Vector3f& direction, const RayPayload& payload) {
     switch (materialType) {
 
     case MaterialType::Lambertian: {
-        float a = direction.z - normal.z;
-        return fabs(a / M_PI);
+        //float a = direction.z - normal.z;
+        //return fabs(a / M_PI);
+        float z = normal.Dot(direction);
+        return z / (4 * M_PI); // TODO: Check this!!
     }
 
-    case MaterialType::Glossy: {
-        float cosTheta = direction.x / normal.z;
-        return ((1000 - roughness + 1) / 2 * M_PI) * cosTheta;
-    }
+    //case MaterialType::Glossy: {
+    //    float cosTheta = direction.x / normal.z;
+    //    return ((1000 - roughness + 1) / 2 * M_PI) * cosTheta;
+    //}
 
     default: return 0;
     }

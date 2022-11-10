@@ -37,6 +37,7 @@ public:
 
 private:
     void                    RenderStrip(Scene scene, Colour** image, const RenderSettings& settings, int frame, int start, int end);
+    Colour                  GatherDirectLighting(const Scene& scene, const RayPayload& payload);
 
     SDL_Renderer*           mRawRenderer;
     Vector3f                mClearColour;

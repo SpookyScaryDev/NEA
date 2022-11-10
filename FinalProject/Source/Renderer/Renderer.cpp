@@ -63,6 +63,38 @@ void Renderer::Refresh() {
     SDL_RenderPresent(mRawRenderer);
 }
 
+Colour Renderer::GatherDirectLighting(const Scene& scene, const RayPayload& payload) {
+    Colour light = Vector3f(0, 0, 0);
+
+    // Accumulate direct lighting from each light source.
+    for each (Object* obj in scene.GetLights()) {
+        if (obj == payload.object) continue; // Don't accumulate light from self.
+        if (!obj->show) continue;
+        Vector3f direction = obj->GetPosition() - payload.point;
+        direction.Normalize();
+        Ray toLight = Ray(payload.point, direction);
+        RayPayload toLightPayload;
+        scene.ClosestHit(toLight, 0.001, FLT_MAX, toLightPayload);
+        if (toLightPayload.object == obj) {
+            // Hit the light.
+            Vector3f normal = payload.frontFace ? payload.normal : -1 * payload.normal; // Make sure normal is pointing in the right direction.
+            float pdf = payload.material->GetPDF(toLight.GetDirection(), payload);
+
+            // Set the contribution to 0 if the angle is more than 90
+            if (direction.Dot(normal) <= 0) pdf = 0;
+
+            float distance = (toLightPayload.point - payload.point).Magnitude();
+
+            if (distance == 0)
+                printf("%s", std::to_string(distance));
+
+            light += obj->material.Emit() * pdf * (1/(distance*distance));
+        }
+    }
+
+    return light;
+}
+
 Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderSettings& settings, std::mt19937& rnd) {
     // Don't go on forever!
     if (depth >= settings.maxDepth) {
@@ -75,7 +107,14 @@ Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderS
         Ray newRay = Ray(Vector3f(), Vector3f());
         float pdf = 1;
         payload.material->Scatter(ray, newRay, pdf, payload, rnd);
-        return TraceRay(scene, newRay, depth, settings, rnd) * payload.material->colour + payload.material->Emit();
+
+        Colour light = GatherDirectLighting(scene, payload);
+
+        // If this is the first bounce, add the emitted lighting so that lights appear bright.
+        // TODO: make sure lights are only sampled once!!
+        //if (depth == 1) light += payload.material->Emit();
+
+        return light * payload.material->colour + TraceRay(scene, newRay, depth, settings, rnd) * payload.material->colour  + payload.material->Emit();
     }
     else {
         return settings.ambientLight;
