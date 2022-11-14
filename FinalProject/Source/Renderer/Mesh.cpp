@@ -1,6 +1,7 @@
 #include "Mesh.h"
 
 #include <vector>
+#include <Maths/Sampling.h>
 #include <Renderer/Object.h>
 #include <Renderer/Triangle.h>
 #include <Renderer/Scene.h>
@@ -104,6 +105,12 @@ bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) 
 		mTransformedMin += mPosition;
 		mTransformedMax += mPosition;
 
+		mCenter.x = (mTransformedMin.x + mTransformedMax.x) / 2;
+		mCenter.y = (mTransformedMin.y + mTransformedMax.y) / 2;
+		mCenter.z = (mTransformedMin.z + mTransformedMax.z) / 2;
+
+		mRadius = (mTransformedMax - mTransformedMin).Magnitude() / 2;
+
 		mDirty = false;
 	}
 
@@ -150,6 +157,10 @@ bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) 
 	}
 
 	return false;
+}
+
+Vector3f Mesh::Sample(const Vector3f& point, float& pdf, std::mt19937& rnd) {
+	return Sampling::SamplePointInCone(point, mCenter, mRadius, pdf, rnd);
 }
 
 std::vector<std::string> Mesh::Split(const std::string& string, char character) {

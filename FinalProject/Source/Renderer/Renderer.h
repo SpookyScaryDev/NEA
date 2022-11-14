@@ -17,6 +17,7 @@ struct RenderSettings {
     int                 samples;
     Colour              ambientLight;
     bool                checkerboard;
+    bool                directLightSampling;
 };
 
 class Renderer { 
@@ -37,7 +38,7 @@ public:
 
 private:
     void                    RenderStrip(Scene scene, Colour** image, const RenderSettings& settings, int frame, int start, int end);
-    Colour                  GatherDirectLighting(const Scene& scene, const RayPayload& payload);
+    Colour                  GatherDirectLighting(const Scene& scene, const RayPayload& payload, std::mt19937& rnd);
 
     SDL_Renderer*           mRawRenderer;
     Vector3f                mClearColour;

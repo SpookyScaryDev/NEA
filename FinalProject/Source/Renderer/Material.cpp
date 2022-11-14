@@ -2,9 +2,11 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+
 #include <Maths/Vector2f.h>
 #include <Maths/Vector3f.h>
 #include <Maths/Ray.h>
+#include <Maths/Sampling.h>
 #include <Renderer/RayPayload.h>
 #include <cstdlib>
 
@@ -62,7 +64,7 @@ bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPaylo
         if (!payload.frontFace) normal *= -1;
         //Vector3f direction = RandomInUnitHemisphere(normal, rnd) + 0.1 * normal;
 
-        Vector3f direction = SampleDirectionInHemisphere(normal, rnd);
+        Vector3f direction = Sampling::SampleDirectionInHemisphere(normal, rnd);
         pdf = GetPDF(direction, payload);
 
         out = Ray(payload.point, direction);
@@ -72,7 +74,7 @@ bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPaylo
     case MaterialType::Glossy: {
         // Reflects according to Snell's law, with randomization determined by roughness.
         Vector3f direction = Reflect(incoming.GetDirection(), payload.normal);
-        if (roughness > 0) direction = SampleDirectionInPhong(direction, rnd);
+        if (roughness > 0) direction = Sampling::SampleDirectionInPhong(direction, 1000-roughness, rnd);
         //direction += roughness * RandomInUnitHemisphere(direction, rnd);
         direction.Normalize();
         out = Ray(payload.point, direction);
@@ -104,7 +106,7 @@ bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPaylo
             direction = Refract(incoming.GetDirection(), normal, ratio);
         }
         //if (roughness > 0) SampleDirectionInPhong(direction, rnd);
-        out = Ray(payload.point, SampleDirectionInPhong(direction, rnd));
+        out = Ray(payload.point, Sampling::SampleDirectionInPhong(direction, 1000-roughness, rnd));
         break;
     }
 
@@ -181,80 +183,26 @@ float Material::RSchlick2(Vector3f i, Vector3f n, float ir1, float ir2) {
 
 }
 
-Vector3f Material::RandomInUnitSphere(std::mt19937& rnd) {
-    std::uniform_real_distribution<float> dist(0.0, 1.0);
-
-    Vector3f direction;
-    do {
-        // Generate a random position in the unit cube centered about (0, 0, 0).
-        direction.x = dist(rnd) - 0.5;
-        direction.y = dist(rnd) - 0.5;
-        direction.z = dist(rnd) - 0.5;
-    }
-    // Reject if the length is greater than 1 (not in the unit sphere).
-    while (direction.Magnitude() > 1);
-    return direction;
-}
-
-Vector3f Material::RandomInUnitHemisphere(Vector3f normal, std::mt19937& rnd) {
-    Vector3f direction = RandomInUnitSphere(rnd);
-    // If not in the hemisphere, flip.
-    if (direction.Dot(normal) < 0) direction = direction * -1;
-    return direction;
-}
-
-Vector2f Material::SampleBilinear(std::mt19937& rnd) {
-    std::uniform_real_distribution<float> dist(0.0, 1.0);
-    return { dist(rnd), dist(rnd) };
-}
-
-Vector3f Material::SampleDirectionInHemisphere(const Vector3f& normal, std::mt19937& rnd) {
-    Vector2f bilinearDistribution = SampleBilinear(rnd);
-    //float a = 1 - 2 * bilinearDistribution.x;
-    //float b = sqrt(1 - a * a);
-    //float phi = 2 * M_PI * bilinearDistribution.y;
-    //Vector3f direction = Vector3f();
-    //direction.x = normal.x + b * cos(phi);
-    //direction.y = normal.y + b * sin(phi);
-    //direction.z = normal.z + a;
-    //direction.Normalize();
-
-    Vector3f direction = Vector3f();
-    direction.x = sqrt(bilinearDistribution[0]) * cos(2 * M_PI * bilinearDistribution[1]);
-    direction.y = sqrt(bilinearDistribution[0]) * sin(2 * M_PI * bilinearDistribution[1]);
-    direction.z = sqrt(1 - bilinearDistribution[0]);
-    direction.Normalize();
-    if (direction.Dot(Vector3f(0, 0, 1)) <= 0) direction = Vector3f(0, 0, 1);
-
-    return TransformSample(direction, normal);
-}
-
-Vector3f Material::SampleDirectionInPhong(const Vector3f& direction, std::mt19937& rnd) {
-    Vector3f out = { 0, 0, -1 };
-    //while (out.Dot(Vector3f(0, 0, 1)) < 0) {
-    Vector2f bilinearDistribution = SampleBilinear(rnd);
-    float cosTheta = pow(1 - bilinearDistribution[0], 1 / (1 + 1000 - roughness));
-    float sinTheta = sqrt(1 - cosTheta * cosTheta);
-    float phi = 2 * M_PI * bilinearDistribution[1];
-    out.x = cos(phi) * sinTheta;
-    out.y = sin(phi) * sinTheta;
-    out.z = cosTheta;
-    //}
-    return TransformSample(out, direction);
-}
-
-Vector3f Material::TransformSample(const Vector3f& sampleRelativeToTheZAxes, const Vector3f& direction) {
-    // A is some vector which is not parallel to any of the ONB axes.
-    Vector3f a = { 1, 0, 0 };
-    if (direction.x > 0.9) a = { 0, 1, 0 }; // Make sure a is not parallel to direction.
-
-    Vector3f s = a.Cross(direction);
-    s.Normalize();
-    Vector3f t = s.Cross(direction);
-    t.Normalize();
-
-    return sampleRelativeToTheZAxes.x * s + sampleRelativeToTheZAxes.y * t + sampleRelativeToTheZAxes.z * direction;
-}
-
+//Vector3f Material::RandomInUnitSphere(std::mt19937& rnd) {
+//    std::uniform_real_distribution<float> dist(0.0, 1.0);
+//
+//    Vector3f direction;
+//    do {
+//        // Generate a random position in the unit cube centered about (0, 0, 0).
+//        direction.x = dist(rnd) - 0.5;
+//        direction.y = dist(rnd) - 0.5;
+//        direction.z = dist(rnd) - 0.5;
+//    }
+//    // Reject if the length is greater than 1 (not in the unit sphere).
+//    while (direction.Magnitude() > 1);
+//    return direction;
+//}
+//
+//Vector3f Material::RandomInUnitHemisphere(Vector3f normal, std::mt19937& rnd) {
+//    Vector3f direction = RandomInUnitSphere(rnd);
+//    // If not in the hemisphere, flip.
+//    if (direction.Dot(normal) < 0) direction = direction * -1;
+//    return direction;
+//}
 
 }

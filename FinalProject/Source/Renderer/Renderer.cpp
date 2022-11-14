@@ -7,6 +7,7 @@
 #include <Window/Window.h>
 #include <Maths/Vector2f.h>
 #include <Maths/Vector3f.h>
+#include <Maths/Sampling.h>
 #include <Renderer/RayPayload.h>
 
 #include "Sphere.h"
@@ -63,14 +64,17 @@ void Renderer::Refresh() {
     SDL_RenderPresent(mRawRenderer);
 }
 
-Colour Renderer::GatherDirectLighting(const Scene& scene, const RayPayload& payload) {
+Colour Renderer::GatherDirectLighting(const Scene& scene, const RayPayload& payload, std::mt19937& rnd) {
     Colour light = Vector3f(0, 0, 0);
 
     // Accumulate direct lighting from each light source.
     for each (Object* obj in scene.GetLights()) {
         if (obj == payload.object) continue; // Don't accumulate light from self.
         if (!obj->show) continue;
-        Vector3f direction = obj->GetPosition() - payload.point;
+        //Vector3f direction = obj->GetPosition() - payload.point;
+        float pdf2 = 0;
+        Vector3f direction = obj->Sample(payload.point, pdf2, rnd);
+        if (direction == Vector3f()) direction = obj->GetPosition() - payload.point;
         direction.Normalize();
         Ray toLight = Ray(payload.point, direction);
         RayPayload toLightPayload;
@@ -85,10 +89,10 @@ Colour Renderer::GatherDirectLighting(const Scene& scene, const RayPayload& payl
 
             float distance = (toLightPayload.point - payload.point).Magnitude();
 
-            if (distance == 0)
-                printf("%s", std::to_string(distance));
+            //if (distance == 0)
+            //    printf("%s", std::to_string(distance));
 
-            light += obj->material.Emit() * pdf * (1/(distance*distance));
+            light += obj->material.Emit() * pdf / pdf2 * (1/(distance*distance)/(4*M_PI*obj->GetScale().x* obj->GetScale().x));
         }
     }
 
@@ -104,17 +108,25 @@ Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderS
 
     RayPayload payload;
     if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
+        //if (payload.object->material.emitted != 0) return payload.material->Emit();
         Ray newRay = Ray(Vector3f(), Vector3f());
         float pdf = 1;
         payload.material->Scatter(ray, newRay, pdf, payload, rnd);
+        Colour colour = Vector3f(0, 0, 0);
 
-        Colour light = GatherDirectLighting(scene, payload);
+        if (settings.directLightSampling) {
+            Colour light = GatherDirectLighting(scene, payload, rnd);
 
-        // If this is the first bounce, add the emitted lighting so that lights appear bright.
-        // TODO: make sure lights are only sampled once!!
-        //if (depth == 1) light += payload.material->Emit();
+            // If this is the first bounce, add the emitted lighting so that lights appear bright.
+            // TODO: make sure lights are only sampled once!!
+            if (depth == 1) light += payload.material->Emit();
+            colour += light * payload.material->colour;
+        }
+        else {
+            colour += payload.material->Emit();
+        }
 
-        return light * payload.material->colour + TraceRay(scene, newRay, depth, settings, rnd) * payload.material->colour  + payload.material->Emit();
+        return colour + TraceRay(scene, newRay, depth, settings, rnd) * payload.material->colour;
     }
     else {
         return settings.ambientLight;

@@ -8,8 +8,7 @@ workspace "NEA"
 
     configurations {
         "Debug",
-        "Development",
-        "Ship"
+        "Release"
     }
 
 include "FinalProject/premake5.lua"

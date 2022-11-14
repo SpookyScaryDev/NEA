@@ -47,6 +47,7 @@ public:
         renderSettings.samples = 1;
         renderSettings.ambientLight = Vector3f(1, 1, 1);
         renderSettings.checkerboard = false;
+        renderSettings.directLightSampling = false;
 
         ambientLightColour = { renderSettings.ambientLight.x, renderSettings.ambientLight.y, renderSettings.ambientLight.z, 1 };
 
@@ -484,7 +485,8 @@ public:
                     redraw |= ImGui::SliderInt("Max Depth", &renderSettings.maxDepth, 1, 100);
                     redraw |= ImGui::SliderInt("Samples Per Frame", &renderSettings.samples, 1, 100);
                     redraw |= ImGui::ColorEdit3("Ambient Light Colour", (float*)&renderSettings.ambientLight);
-                    redraw |= ImGui::Checkbox("Checkerboard", &renderSettings.checkerboard);
+                    redraw |= ImGui::Checkbox("Checkerboard", &renderSettings.checkerboard); ImGui::SameLine();
+                    redraw |= ImGui::Checkbox("Explicit Light Sampling", &renderSettings.directLightSampling);
                     ImGui::EndTabItem();
                 }
                 //if (ImGui::BeginTabItem("Output")) {

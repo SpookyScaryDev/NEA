@@ -20,6 +20,8 @@ public:
 
 	virtual bool        Intersect(const Ray& ray, float min, float max, RayPayload& payload) = 0;
 
+	virtual Vector3f    Sample(const Vector3f& point, float& pdf, std::mt19937& rnd) = 0;
+
 	Vector3f            GetPosition() const;
 	void                SetPosition(const Vector3f& position);
 

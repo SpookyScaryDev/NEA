@@ -1,14 +1,21 @@
 projectdir = "./"
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-        
+
+externalproject "nfd"
+   location "../Vendor/NFD/build/vs2010"
+   uuid "5D94880B-C99D-887C-5219-9F7CBE21947C"
+   kind "StaticLib"
+   language "C++"    
+    
 project "FinalProject"
     location       (projectdir)
     kind           "ConsoleApp"
     language       "C++"
-    staticruntime  "On"
+    staticruntime  "Off"
 
     targetdir  (projectdir .. "Binaries/" .. outputdir)
     objdir     (projectdir .. "Intermediate/" .. outputdir)
+    debugdir   (projectdir .. "Data/")
 
     files {
         projectdir .. "../Vendor/imgui/backends/imgui_impl_sdl.h",
@@ -35,7 +42,6 @@ project "FinalProject"
 
     libdirs {
         "../Vendor/SDL2/lib/x64",
-        "../Vendor/NFD/build/lib/Release/x64",
     }
 
     links {
@@ -46,6 +52,7 @@ project "FinalProject"
  
     prebuildcommands {
         "{COPY} ../Vendor/SDL2/lib/x64/SDL2.dll %{cfg.targetdir}",
+        "{COPY} Data/*.* %{cfg.targetdir}",
     }
 
     filter "system:windows"
@@ -59,12 +66,7 @@ project "FinalProject"
         runtime "Debug"
         symbols "On"    
 
-    filter "configurations:Development"
-        defines "DEVELOPMENT"
-        runtime "Release"
-        optimize "On"    
-
-    filter "configurations:Ship"
-        defines "SHIP"
+    filter "configurations:Release"
+        defines "RELEASE"
         runtime "Release"
         optimize "Speed"

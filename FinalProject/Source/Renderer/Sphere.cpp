@@ -1,6 +1,9 @@
 #include "Sphere.h"
 
+#define _USE_MATH_DEFINES
 #include <math.h>
+
+#include <Maths/Sampling.h>
 #include <Renderer/Material.h>
 
 #include <nlohmann/json.hpp>
@@ -57,6 +60,10 @@ bool Sphere::Intersect(const Ray& ray, float min, float max, RayPayload& payload
 	}
 
 	return false;
+}
+
+Vector3f Sphere::Sample(const Vector3f& point, float& pdf, std::mt19937& rnd) {
+	return Sampling::SamplePointInCone(point, mPosition, radius, pdf, rnd);
 }
 
 }

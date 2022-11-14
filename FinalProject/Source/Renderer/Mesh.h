@@ -14,6 +14,7 @@ public:
 	void                     LoadFromFile(const char* filePath);
 
 	virtual bool             Intersect(const Ray& ray, float min, float max, RayPayload& payload) override;
+	virtual Vector3f         Sample(const Vector3f& point, float& pdf, std::mt19937& rnd) override;
 
 private:
 	std::vector<std::string> Split(const std::string& string, char character); // TODO: rethink this
@@ -26,6 +27,8 @@ private:
 
 	Vector3f                 mTransformedMin;
 	Vector3f                 mTransformedMax;
+	Vector3f                 mCenter;
+	float                    mRadius;
 };
 
 }

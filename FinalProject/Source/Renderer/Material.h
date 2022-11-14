@@ -38,15 +38,8 @@ private:
     Vector3f            Reflect(Vector3f d, Vector3f n);
     Vector3f            Refract(Vector3f d, Vector3f n, float ratio);
     float               RSchlick2(Vector3f d, Vector3f n, float ir1, float ir2); // Used to approximate reflectance.
-    Vector3f            RandomInUnitSphere(std::mt19937& rnd);
-    Vector3f            RandomInUnitHemisphere(Vector3f normal, std::mt19937& rnd);
-
-    Vector2f            SampleBilinear(std::mt19937& rnd);
-    Vector3f            SampleDirectionInHemisphere(const Vector3f& normal, std::mt19937& rnd);
-    Vector3f            SampleDirectionInPhong(const Vector3f& direction, std::mt19937& rnd);
-
-    Vector3f            TransformSample(const Vector3f& sampleRelativeToTheZAxes, const Vector3f& direction);
-
+    //Vector3f            RandomInUnitSphere(std::mt19937& rnd);
+    //Vector3f            RandomInUnitHemisphere(Vector3f normal, std::mt19937& rnd);
 };
 
 }

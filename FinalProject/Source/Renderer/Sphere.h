@@ -12,6 +12,7 @@ public:
 	virtual nlohmann::json ToJSON() override;
 
 	virtual bool        Intersect(const Ray& ray, float min, float max, RayPayload& payload) override;
+	virtual Vector3f    Sample(const Vector3f& point, float& pdf, std::mt19937& rnd) override;
 
 	float               radius;
 };
