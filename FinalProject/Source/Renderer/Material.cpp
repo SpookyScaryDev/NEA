@@ -131,7 +131,7 @@ float Material::GetPDF(const Vector3f& direction, const RayPayload& payload) {
         //float a = direction.z - normal.z;
         //return fabs(a / M_PI);
         float z = normal.Dot(direction);
-        return z / (4 * M_PI); // TODO: Check this!!
+        return z / M_PI; // TODO: Check this!!
     }
 
     //case MaterialType::Glossy: {

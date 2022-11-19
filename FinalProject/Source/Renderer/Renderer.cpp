@@ -92,7 +92,7 @@ Colour Renderer::GatherDirectLighting(const Scene& scene, const RayPayload& payl
             //if (distance == 0)
             //    printf("%s", std::to_string(distance));
 
-            light += obj->material.Emit() * pdf / pdf2 * (1/(distance*distance)/(4*M_PI*obj->GetScale().x* obj->GetScale().x));
+            light += obj->material.Emit() * pdf / pdf2;
         }
     }
 
