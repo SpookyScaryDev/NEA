@@ -69,7 +69,7 @@ Vector2f& Vector2f::operator*=(float scalar) {
 }
 
 Vector2f Vector2f::operator*(const Vector2f& vector) const {
-    return Vector2f(x * result.x, y * result.y);
+    return Vector2f(x * vector.x, y * vector.y);
 }
 
 Vector2f Vector2f::operator/(const float scalar) const {
