@@ -42,4 +42,23 @@ Vector3f Camera::GetViewportPos(Vector2f screenPos) const {
 	return viewportPos;
 }
 
+Vector2f Camera::GetScreenPos(Vector3f point) const {
+	Vector3f toPoint = point - position;
+	Vector3f viewportPlaneNormal  = mViewportBottomLeft + 0.5 * mViewportVertical + 0.5 * mViewportHorizontal;
+
+	//if (viewportPlaneNormal.Dot(toPoint) < 0) printf("oof\n");
+	//else printf("ok\n");
+
+	float d = viewportPlaneNormal.Dot(mViewportBottomLeft + position);
+
+	printf("%f\n", d);
+
+	float lambda = (d - viewportPlaneNormal.Dot(position)) / (toPoint.Dot(viewportPlaneNormal));
+	Vector3f posOnViewport = position + lambda * toPoint;
+
+	Vector2f screenPos = Vector2f((posOnViewport.x - (mViewportBottomLeft.x + position.x)) / mViewportHorizontal.x,
+		                          1-((posOnViewport.y - (mViewportBottomLeft.y + position.y)) / mViewportVertical.y));
+	return screenPos;
+}
+
 }

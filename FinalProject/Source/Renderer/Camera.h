@@ -16,6 +16,7 @@ public:
 	nlohmann::json      ToJSON();
 	
 	Vector3f            GetViewportPos(Vector2f screenPos) const;  // Translates from pixel coordinates to their location in 3d space.
+	Vector2f            GetScreenPos(Vector3f viewportPos) const;
 
 	Vector3f            position;
 

@@ -68,6 +68,10 @@ Vector2f& Vector2f::operator*=(float scalar) {
     return *this;
 }
 
+Vector2f Vector2f::operator*(const Vector2f& vector) const {
+    return Vector2f(x * result.x, y * result.y);
+}
+
 Vector2f Vector2f::operator/(const float scalar) const {
     ASSERT(scalar != 0, "Tried to divide a vector by 0!");
     return Vector2f(x / scalar, y / scalar);

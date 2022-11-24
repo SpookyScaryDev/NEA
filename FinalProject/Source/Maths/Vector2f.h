@@ -23,6 +23,8 @@ public:
     Vector2f            operator*(const float scalar)     const;
     Vector2f&           operator*=(float scalar);
 
+    Vector2f            operator*(const Vector2f& vector) const;
+
     Vector2f            operator/(const float scalar)     const;
     Vector2f&           operator/=(float scalar);
 
