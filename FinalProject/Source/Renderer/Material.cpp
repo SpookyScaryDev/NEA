@@ -105,8 +105,9 @@ bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPaylo
         else {
             direction = Refract(incoming.GetDirection(), normal, ratio);
         }
-        //if (roughness > 0) SampleDirectionInPhong(direction, rnd);
-        out = Ray(payload.point, Sampling::SampleDirectionInPhong(direction, 1000-roughness, rnd));
+        if (roughness > 0) out = Ray(payload.point, Sampling::SampleDirectionInPhong(direction, 1000 - roughness, rnd));
+        else out = Ray(payload.point, direction);
+        
         break;
     }
 

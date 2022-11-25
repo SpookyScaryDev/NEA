@@ -38,7 +38,7 @@ json Camera::ToJSON() {
 }
 	
 Vector3f Camera::GetViewportPos(Vector2f screenPos) const {
-	Vector3f viewportPos = mViewportBottomLeft + mViewportHorizontal * screenPos.x + mViewportVertical * (1-screenPos.y) + position;
+	Vector3f viewportPos = (mViewportBottomLeft) + mViewportHorizontal * screenPos.x + mViewportVertical * (1-screenPos.y);
 	return viewportPos;
 }
 
@@ -46,18 +46,18 @@ Vector2f Camera::GetScreenPos(Vector3f point) const {
 	Vector3f toPoint = point - position;
 	Vector3f viewportPlaneNormal  = mViewportBottomLeft + 0.5 * mViewportVertical + 0.5 * mViewportHorizontal;
 
-	//if (viewportPlaneNormal.Dot(toPoint) < 0) printf("oof\n");
-	//else printf("ok\n");
-
 	float d = viewportPlaneNormal.Dot(mViewportBottomLeft + position);
 
-	printf("%f\n", d);
+	float lambda = (d - viewportPlaneNormal.Dot(position)) / (viewportPlaneNormal.Dot(toPoint));
 
-	float lambda = (d - viewportPlaneNormal.Dot(position)) / (toPoint.Dot(viewportPlaneNormal));
 	Vector3f posOnViewport = position + lambda * toPoint;
 
 	Vector2f screenPos = Vector2f((posOnViewport.x - (mViewportBottomLeft.x + position.x)) / mViewportHorizontal.x,
 		                          1-((posOnViewport.y - (mViewportBottomLeft.y + position.y)) / mViewportVertical.y));
+
+	//Vector3f posOnViewport2 = GetViewportPos(screenPos);
+
+	//printf("(%f, %f, %f) (%f, %f, %f)\n", posOnViewport.x, posOnViewport.y, posOnViewport.z, posOnViewport2.x, posOnViewport2.y, posOnViewport2.z);
 	return screenPos;
 }
 

@@ -50,7 +50,7 @@ public:
         renderSettings.samples = 1;
         renderSettings.ambientLight = Vector3f(1, 1, 1);
         renderSettings.checkerboard = false;
-        renderSettings.directLightSampling = false;
+        renderSettings.directLightSampling = true;
 
         ambientLightColour = { (float)renderSettings.ambientLight.x, (float)renderSettings.ambientLight.y, (float)renderSettings.ambientLight.z, 1 };
 
@@ -663,7 +663,7 @@ public:
         SDL_SetRenderTarget(GetRenderer()->GetRawRenderer(), finalImage2);
         SDL_RenderCopy(GetRenderer()->GetRawRenderer(), finalImage->GetRawTexture(), NULL, NULL);
         SDL_SetRenderDrawColor(GetRenderer()->GetRawRenderer(), 255, 0, 0, 255);
-        SDL_RenderDrawLine(GetRenderer()->GetRawRenderer(), line.start.x, line.start.y, line.end.x, line.end.y);
+        //SDL_RenderDrawLine(GetRenderer()->GetRawRenderer(), line.start.x, line.start.y, line.end.x, line.end.y);
         SDL_SetRenderTarget(GetRenderer()->GetRawRenderer(), NULL);
 
         // Process input for ImGui.

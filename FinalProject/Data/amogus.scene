@@ -3,9 +3,9 @@
         "aspectRatio": 1.3333333730697632,
         "focalLength": 2.0,
         "position": [
-            0.05000000074505806,
+            0.05999999865889549,
             0.12999999523162842,
-            0.4699999988079071
+            0.699999988079071
         ]
     },
     "objects": [
@@ -498,11 +498,11 @@
                 ],
                 "emitted": 0.0,
                 "refractiveIndex": 1.5,
-                "roughness": 1.0,
-                "type": "lambertian"
+                "roughness": 0.0,
+                "type": "glass"
             },
             "name": "Object 15",
-            "path": "D:\\Users\\Thomas\\Documents\\dev\\NEA\\FinalProject\\amogus.obj",
+            "path": "amogus.obj",
             "position": [
                 -0.20000000298023224,
                 0.0,
@@ -534,7 +534,7 @@
                 "type": "lambertian"
             },
             "name": "Object 16",
-            "path": "D:\\Users\\Thomas\\Documents\\dev\\NEA\\FinalProject\\amogus.obj",
+            "path": "amogus.obj",
             "position": [
                 0.2199999988079071,
                 0.0,
@@ -566,7 +566,7 @@
                 "type": "lambertian"
             },
             "name": "Object 17",
-            "path": "D:\\Users\\Thomas\\Documents\\dev\\NEA\\FinalProject\\amogus.obj",
+            "path": "amogus.obj",
             "position": [
                 0.3700000047683716,
                 0.0,
@@ -598,7 +598,7 @@
                 "type": "lambertian"
             },
             "name": "Object 18",
-            "path": "D:\\Users\\Thomas\\Documents\\dev\\NEA\\FinalProject\\amogus.obj",
+            "path": "amogus.obj",
             "position": [
                 0.09000000357627869,
                 0.0,
@@ -630,7 +630,7 @@
                 "type": "lambertian"
             },
             "name": "Object 19",
-            "path": "D:\\Users\\Thomas\\Documents\\dev\\NEA\\FinalProject\\amogus.obj",
+            "path": "amogus.obj",
             "position": [
                 -0.03999999910593033,
                 0.0,
@@ -640,6 +640,38 @@
                 0.0,
                 -68.0,
                 0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "mesh"
+        },
+        {
+            "material": {
+                "colour": [
+                    1.0,
+                    0.8982300758361816,
+                    0.8982300758361816
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0,
+                "type": "glass"
+            },
+            "name": "Object 15",
+            "path": "D:\\Users\\Thomas\\Documents\\dev\\NEA\\FinalProject\\Data\\amogus.obj",
+            "position": [
+                0.07999999821186066,
+                0.12999999523162842,
+                0.3499999940395355
+            ],
+            "rotation": [
+                1.0,
+                27.0,
+                51.0
             ],
             "scale": [
                 1.0,
