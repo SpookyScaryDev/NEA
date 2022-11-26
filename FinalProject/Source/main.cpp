@@ -6,6 +6,7 @@
 #include <SDL.h>
 
 #include <fstream>
+#include <filesystem>
 #include <string>
 #include <thread>
 #include <vector>
@@ -22,18 +23,27 @@
 
 #include <nfd.h>
 
+#include <algorithm>
 
 #include <Renderer/Line.h>
 
 using namespace Prototype;
 
+struct RayVisualizationSettings {
+    int maxDepth = 4;
+    int initialRays = 8;
+    float maxDistance = 0.5;
+    Colour lineColour = { 1, 0, 0 };
+};
+
 class PrototypeApp : public Application {
 public:
-    PrototypeApp(const char* file) : Application("Ray Tracing Optics Simulator", 1100, 720) {
+    PrototypeApp(const char* file) : Application("Ray Tracing Optics Simulator", 1900 * 0.75, 1080 * 0.75) {
+        darkMode = true;
         SetUpImGui();
 
-        width = 300;
-        height = 225;
+        width = 450 * 1;
+        height = 225 * 1;
         aspectRatio = (float)width / (float)height;
 
         // Need to use an array as texture data wraps around after 255!
@@ -71,6 +81,10 @@ public:
         newObjectType = 0;
         newObjectPath = "";
         newObjectName = "Object " + std::to_string(scene.GetObjectCount());
+
+        showVisualizualisation = false;
+
+        GenerateLines();
     }
 
     void GenerateScene() {
@@ -130,7 +144,7 @@ public:
         Material amogus = Material(MaterialType::Lambertian, { 0.8, 0, 0 }, 0);
         scene.AddObject("Amogus", (Object*)new Mesh({ -0.18, 0, 0.36 }, "amogus.obj", amogus));
 
-        Camera camera = Camera(aspectRatio, 2, { 0,  0.13, 0.8 });
+        Camera camera = Camera(aspectRatio, 3, { 0,  0.13, 0.8 });
 
         //scene.SetCamera(camera);
         scene = Scene::LoadFromFile("scene.scene");
@@ -150,7 +164,7 @@ public:
         ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
         // Setup Dear ImGui style
-        ImGui::StyleColorsDark();
+        //ImGui::StyleColorsDark();
         //ImGui::StyleColorsClassic();
 
         // Setup Platform/Renderer backends
@@ -159,7 +173,7 @@ public:
 
         io.Fonts->AddFontFromFileTTF("Roboto-Regular.ttf", 15.0f);
 
-        SetImGuiStyle(false);
+        SetImGuiStyle(darkMode);
     }
 
     void SetImGuiStyle(bool darkMode) {
@@ -169,13 +183,96 @@ public:
         style.WindowBorderSize = 0;
 
         if (darkMode) {
-            ImGui::StyleColorsDark();
+            //style.Alpha = 1.0f;
+            //style.DisabledAlpha = 0.6000000238418579f;
+            //style.WindowPadding = ImVec2(8.0f, 8.0f);
+            //style.WindowRounding = 0.0f;
+            //style.WindowBorderSize = 1.0f;
+            //style.WindowMinSize = ImVec2(32.0f, 32.0f);
+            //style.WindowTitleAlign = ImVec2(0.0f, 0.5f);
+            //style.WindowMenuButtonPosition = ImGuiDir_Left;
+            //style.ChildRounding = 0.0f;
+            //style.ChildBorderSize = 1.0f;
+            //style.PopupRounding = 0.0f;
+            //style.PopupBorderSize = 1.0f;
+            //style.FramePadding = ImVec2(4.0f, 3.0f);
+            //style.FrameRounding = 0.0f;
+            //style.FrameBorderSize = 0.0f;
+            //style.ItemSpacing = ImVec2(8.0f, 4.0f);
+            //style.ItemInnerSpacing = ImVec2(4.0f, 4.0f);
+            //style.CellPadding = ImVec2(4.0f, 2.0f);
+            //style.IndentSpacing = 21.0f;
+            //style.ColumnsMinSpacing = 6.0f;
+            //style.ScrollbarSize = 14.0f;
+            //style.ScrollbarRounding = 0.0f;
+            //style.GrabMinSize = 10.0f;
+            //style.GrabRounding = 0.0f;
+            //style.TabRounding = 0.0f;
+            //style.TabBorderSize = 0.0f;
+            //style.TabMinWidthForCloseButton = 0.0f;
+            //style.ColorButtonPosition = ImGuiDir_Right;
+            //style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
+            //style.SelectableTextAlign = ImVec2(0.0f, 0.0f);
+
+            style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+            style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.5921568870544434f, 0.5921568870544434f, 0.5921568870544434f, 1.0f);
+            style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1725211292505264f, 0.172521248459816f, 0.1802574992179871f, 1.0f);
+            style.Colors[ImGuiCol_ChildBg] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_PopupBg] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_Border] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.3058823645114899f, 0.3058823645114899f, 0.3058823645114899f, 1.0f);
+            style.Colors[ImGuiCol_FrameBg] = ImVec4(0.2000000029802322f, 0.2000000029802322f, 0.2156862765550613f, 1.0f);
+            style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
+            style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
+            style.Colors[ImGuiCol_TitleBg] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.2117647081613541f, 0.2117647081613541f, 0.2117647081613541f, 1.0f);
+            style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.2000000029802322f, 0.2000000029802322f, 0.2156862765550613f, 1.0f);
+            style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.321568638086319f, 0.321568638086319f, 0.3333333432674408f, 1.0f);
+            style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.3529411852359772f, 0.3529411852359772f, 0.3725490272045135f, 1.0f);
+            style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.3529411852359772f, 0.3529411852359772f, 0.3725490272045135f, 1.0f);
+            style.Colors[ImGuiCol_CheckMark] = ImVec4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
+            style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
+            style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
+            style.Colors[ImGuiCol_Button] = ImVec4(0.2000000029802322f, 0.2000000029802322f, 0.2156862765550613f, 1.0f);
+            style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
+            style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
+            style.Colors[ImGuiCol_Header] = ImVec4(0.2000000029802322f, 0.2000000029802322f, 0.2156862765550613f, 1.0f);
+            style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
+            style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
+            style.Colors[ImGuiCol_Separator] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_SeparatorHovered] = ImVec4(0.3058823645114899f, 0.3058823645114899f, 0.3058823645114899f, 1.0f);
+            style.Colors[ImGuiCol_SeparatorActive] = ImVec4(0.3058823645114899f, 0.3058823645114899f, 0.3058823645114899f, 1.0f);
+            style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.2000000029802322f, 0.2000000029802322f, 0.2156862765550613f, 1.0f);
+            style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.321568638086319f, 0.321568638086319f, 0.3333333432674408f, 1.0f);
+            style.Colors[ImGuiCol_Tab] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_TabHovered] = ImVec4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
+            style.Colors[ImGuiCol_TabActive] = ImVec4(0.1725490242242813f, 0.1725490242242813f, 0.1803921610116959f, 1.0f);
+            style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.1725490242242813f, 0.1725490242242813f, 0.1803921610116959f, 1.0f);
+            style.Colors[ImGuiCol_PlotLines] = ImVec4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
+            style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
+            style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
+            style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
+            style.Colors[ImGuiCol_TableHeaderBg] = ImVec4(0.1882352977991104f, 0.1882352977991104f, 0.2000000029802322f, 1.0f);
+            style.Colors[ImGuiCol_TableBorderStrong] = ImVec4(0.3098039329051971f, 0.3098039329051971f, 0.3490196168422699f, 1.0f);
+            style.Colors[ImGuiCol_TableBorderLight] = ImVec4(0.2274509817361832f, 0.2274509817361832f, 0.2470588237047195f, 1.0f);
+            style.Colors[ImGuiCol_TableRowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+            style.Colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.0f, 1.0f, 1.0f, 0.05999999865889549f);
+            style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
+            style.Colors[ImGuiCol_DragDropTarget] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_NavHighlight] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.699999988079071f);
+            style.Colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.800000011920929f, 0.800000011920929f, 0.800000011920929f, 0.2000000029802322f);
+            style.Colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
         }
         else {
             ImGui::StyleColorsLight();
         }
 
-        style.Colors[ImGuiCol_PopupBg] = style.Colors[ImGuiCol_WindowBg];
+       //style.Colors[ImGuiCol_PopupBg] = style.Colors[ImGuiCol_TitleBg];
 
         //for (int i = 0; i <= ImGuiCol_COUNT; i++) {
         //    ImGuiCol_ colourID = (ImGuiCol_)i;
@@ -225,6 +322,11 @@ public:
         return true;
     }
 
+    std::string AbsolutePathToRelative(std::string path) {
+        std::filesystem::path currentDir("./");
+        std::filesystem::path absolute(path);
+        return std::filesystem::relative(absolute, currentDir).generic_string();
+    }
 
     void New() {
         redraw = true;
@@ -246,9 +348,115 @@ public:
     void OpenScene() {
         std::string path;
         if (OpenFile("scene", path)) {
+            path = AbsolutePathToRelative(path);
             scene = scene.LoadFromFile(path.c_str());
             redraw = true;
             loadedNewFile = true;
+        }
+    }
+
+    void TraceVisRay(const Ray& ray, Line3D currentLine, float length, int depth, std::mt19937& rnd) {
+        // Don't go on forever!
+        if (depth >= visSettings.maxDepth) {
+            //return Vector3f();
+            //currentLine.end = ray.GetPointAt(10);
+            //currentLine.endColour = currentLine.startColour - Vector3f(255, 0, 0) * 10 / 100;
+            //lines.push_back(currentLine);
+            //currentLine.start = currentLine.end;
+            //currentLine.startColour = currentLine.endColour;
+
+            return;
+        }
+        depth++;
+
+        if (length > visSettings.maxDistance) return;
+
+        RayPayload payload;
+        if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
+            if (payload.object->show == false) return;
+
+            Ray newRay = Ray(Vector3f(), Vector3f());
+            float pdf;
+            payload.material->Scatter(ray, newRay, pdf, payload, rnd);
+
+            if (length + payload.t > visSettings.maxDistance) {
+                currentLine.end = ray.GetPointAt(visSettings.maxDistance - length);
+                length = visSettings.maxDistance;
+            }
+            else {
+                length += payload.t;
+                currentLine.end = payload.point;
+            }
+            currentLine.endAlpha = 1.0- (length / visSettings.maxDistance);
+
+            lines.push_back(currentLine);
+            currentLine.start = newRay.GetOrigin();
+            currentLine.startAlpha = currentLine.endAlpha;
+
+            if (payload.object->material.emitted != 0) return;
+
+            TraceVisRay(newRay, currentLine, length, depth, rnd);
+        }
+        else {
+
+            if (depth > 1) {
+                currentLine.end = ray.GetPointAt(visSettings.maxDistance - length);
+                length = visSettings.maxDistance;
+                currentLine.endAlpha = 0;
+
+                //currentLine.startColour = currentLine.endColour;
+                lines.push_back(currentLine);
+            }
+
+            return;
+        }
+        //return { 0, 0, 0 };
+        return;
+    }
+
+    void GenerateLines() {
+        lines.clear();
+        Vector3f origin = Vector3f(0, 0.375, -2);
+        int divisions = visSettings.initialRays;
+        std::vector<Ray> rays;
+        Matrix4x4f rotation;
+        Vector3f initialDirection = { 0, -1, 0 };
+        //for (int i = 0; i < 360; i += 360/divisions) {
+        //    for (int j = 0; j < 360; j += 360 / divisions) {
+        //        for (int k = 0; k < 360; k += 360 / divisions) {
+        //            rotation = Matrix4x4f::Rotate({ (float)i, (float)j, (float)k });
+        //            Vector3f direction = rotation * initialDirection;
+        //            direction.Normalize();
+        //            bool alreadyAdded = false;
+        //            for each (Ray ray in rays) {
+        //                if (ray.GetDirection() == direction) alreadyAdded = true;
+        //            }
+        //            if (!alreadyAdded) rays.push_back({ origin, direction });
+        //        }
+        //    }
+        //}
+
+        for (float i = 0; i < 2 * M_PI; i += 2 * M_PI / divisions) {
+            for (float j = 0; j < 2 * M_PI; j += 2 * M_PI / divisions) {
+                Vector3f direction = Vector3f(sin(i) * cos(j), sin(j) * cos(i), cos(i));
+                direction.Normalize();
+                rays.push_back({ origin, direction });
+                //lines.push_back({ origin, direction * 2 + origin });
+            }
+        }
+
+        std::cout << rays.size() << std::endl;
+
+        std::random_device r;
+        std::seed_seq seed{ r(), r(), r(), r(), r(), r(), r(), r() };
+        std::mt19937 rnd(seed);
+        std::uniform_real_distribution<float> dist(0.0, 1.0);
+
+        for each (Ray ray in rays) {
+            Line3D line;
+            line.start = origin;
+            line.startAlpha = 1;
+            TraceVisRay(ray, line, 0, 0, rnd);
         }
     }
 
@@ -258,6 +466,7 @@ public:
         ImGui::NewFrame();
 
         ImGui::DockSpaceOverViewport();
+        ImGui::ShowDemoWindow();
 
         // Menu bar.
         {
@@ -278,16 +487,24 @@ public:
                     ImGui::EndMenu();
                 }
 
+                if (ImGui::BeginMenu("Interface")) {
+                    if (ImGui::Checkbox("Dark Mode", &darkMode)) {
+                        SetImGuiStyle(darkMode);
+                    }
+                    ImGui::EndMenu();
+                }
+
                 ImGui::EndMainMenuBar();
             }
         }
 
         // FPS overlay
         {
-            ImGui::SetNextWindowBgAlpha(0.35f);
+            ImGui::SetNextWindowBgAlpha(0.9f);
             ImGui::Begin("Overlay", (bool*)1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::Text("Renderer: %.3f ms/frame (%.1f FPS)", rendererFps * 1000, 1000/(rendererFps * 1000));
+
             ImGui::End();
         }
 
@@ -308,7 +525,7 @@ public:
                 ImGui::OpenPopup("Add Object");
             }
 
-            ImGui::SetNextWindowPos(ImVec2(GetWindow()->GetWidth() / 2, GetWindow()->GetHeight() / 2), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+            ImGui::SetNextWindowPos(ImGui::GetWindowPos(), ImGuiCond_Always, ImVec2(1, 0));
             if (ImGui::BeginPopup("Add Object")) {
 
                 char nameBuffer[100];
@@ -345,7 +562,7 @@ public:
                     if (ImGui::Button("Browse for file")) {
                         nfdchar_t* path = NULL;
                         nfdresult_t result = NFD_OpenDialog("obj", NULL, &path);
-                        newObjectPath = path;
+                        newObjectPath = AbsolutePathToRelative(path);
                     }
                 }
 
@@ -444,6 +661,9 @@ public:
                     redraw = true;
                 }
             }
+            else {
+                ImGui::Text("Select an object to edit it's properties.");
+            }
             ImGui::End();
         }
 
@@ -478,6 +698,9 @@ public:
                 if (material->materialType == MaterialType::Glass) redraw |= ImGui::SliderFloat("Index of Refraction", &material->refractiveIndex, 1, 2);
                 if (material->materialType != MaterialType::Lambertian) redraw |= ImGui::SliderFloat("Roughness", &material->roughness, 0, 1000);
             }
+            else {
+                ImGui::Text("Select an object to edit it's material.");
+            }
             ImGui::End();
         }
 
@@ -489,7 +712,7 @@ public:
                     redraw |= ImGui::SliderInt("Max Depth", &renderSettings.maxDepth, 1, 100);
                     redraw |= ImGui::SliderInt("Samples Per Frame", &renderSettings.samples, 1, 100);
                     redraw |= ImGui::ColorEdit3("Ambient Light Colour", (float*)&renderSettings.ambientLight);
-                    redraw |= ImGui::Checkbox("Checkerboard", &renderSettings.checkerboard); ImGui::SameLine();
+                    redraw |= ImGui::Checkbox("Checkerboard", &renderSettings.checkerboard);
                     redraw |= ImGui::Checkbox("Explicit Light Sampling", &renderSettings.directLightSampling);
                     ImGui::EndTabItem();
                 }
@@ -517,15 +740,18 @@ public:
 
         // The window which contains the renderer output.
         {
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
             ImGui::Begin("Scene");
+            ImGui::SetCursorPos({ 0, 0 });
+
             ImGui::SetItemAllowOverlap();
 
             SDL_Point size;
             SDL_QueryTexture(finalImage->GetRawTexture(), NULL, NULL, &size.x, &size.y);
 
-            float scale = (ImGui::GetWindowWidth() - 15) / size.x;
-            if (scale * size.y > ImGui::GetWindowHeight()) scale = (ImGui::GetWindowHeight() - 15) / size.y;
-
+            float scale = (ImGui::GetWindowWidth()) / size.x;
+            if (scale * size.y > ImGui::GetWindowHeight()) scale = (ImGui::GetWindowHeight()) / size.y;
+            //scale = 1;
             //ImGui::SetCursorPos({ 0, 25 });
             ImVec2 imageStartScreen = ImGui::GetCursorScreenPos();
             //ImGui::GetWindowDrawList()->AddImage(
@@ -547,12 +773,103 @@ public:
                     selectedObject = -1;
                 }
             }
+            //std::cout << ImGui::GetWindowWidth() << " " << std::round(size.x * scale) << std::endl;
+            //if (std::round(size.y * scale) != ImGui::GetWindowHeight() || std::round(size.x * scale) != 1631) {
+            //    float aspectRatio = ImGui::GetWindowWidth() / ImGui::GetWindowHeight();
+            //    width = height * aspectRatio;
+            //    renderSettings.resolution = { (float)width, (float)height };
+
+            //    image = new Colour * [width];
+            //    isSelectedObjectVisible = new bool* [width];
+            //    for (int i = 0; i < width; i++) {
+            //        image[i] = new Colour[height];
+            //        isSelectedObjectVisible[i] = new bool[height];
+            //    }
+
+            //    finalImage = new Texture(width, height);
+            //    finalImage2 = SDL_CreateTexture(Application::GetApp()->GetRenderer()->GetRawRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
+
+            //    SDL_SetTextureScaleMode(finalImage2, SDL_ScaleModeBest);
+
+            //    scene.camera = Camera(aspectRatio, 2, scene.camera.position);
+            //}
 
             ImGui::End();
+            ImGui::PopStyleVar();
         }
+
+        {
+            ImGui::Begin("Ray Visualization");
+            ImGui::Checkbox("Show visualization", &showVisualizualisation);
+            ImGui::DragInt("Initial rays cast", &visSettings.initialRays, 1, 0, 100);
+            ImGui::DragInt("Max depth", &visSettings.maxDepth, 1, 0, 100);
+            ImGui::DragFloat("Max distance", &visSettings.maxDistance, 0.01, 0.01, 10);
+            ImGui::ColorEdit3("Colour", (float*)&visSettings.lineColour);
+            if (ImGui::Button("Generate Rays")) GenerateLines();
+            ImGui::End();
+        }
+
         ImGui::Render();
         ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
 
+    }
+
+    void DrawBresenhamLine(Texture* image, Line2D line) {
+        image->Lock();
+        float m = (line.end.y - line.start.y) / (line.end.x - line.start.x);
+        float c = line.start.y - m * line.start.x;
+        int xDirection = line.start.x < line.end.x ? 1 : -1;
+        int yDirection = line.start.y < line.end.y ? 1 : -1;
+        int xCoord = line.start.x;
+        int yCoord = line.start.y;
+
+        float alpha = line.startAlpha;
+        Colour colour;
+
+        if (abs(m) <= 1) {
+            float alphaDiff = (line.endAlpha - line.startAlpha) / abs((line.end.x - line.start.x) + 1);
+            float actualY;
+            for (xCoord; xCoord != line.end.x; xCoord += xDirection) {
+                actualY = m * xCoord + c;
+                float d1 = abs(actualY - yCoord);
+                float d2 = abs(yCoord + yDirection - actualY);
+                if (d1 - d2 > 0)
+                    yCoord += yDirection;
+
+                if (alpha < 0) alpha = 0;
+                if (alpha > 1) alpha = 1;
+
+                if (xCoord >= 0 && xCoord < image->GetWidth() && yCoord >= 0 && yCoord < image->GetHeight()) {
+                    colour = line.colour * 255 * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) * (1 - alpha);
+                    image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
+                }
+
+                alpha += alphaDiff;
+            }
+        }
+        else {
+            float actualX;
+            float alphaDiff = (line.endAlpha - line.startAlpha) / abs((line.end.y - line.start.y) + 1);
+            for (yCoord; yCoord != line.end.y; yCoord += yDirection) {
+                actualX = (yCoord - c) / m;
+                float d1 = abs(actualX - xCoord);
+                float d2 = abs(xCoord + xDirection - actualX);
+                if (d1 - d2 > 0)
+                    xCoord += xDirection;
+
+                if (alpha < 0) alpha = 0;
+                if (alpha > 1) alpha = 1;
+
+                if (xCoord >= 0 && xCoord < image->GetWidth() && yCoord >= 0 && yCoord < image->GetHeight()) {
+                    colour = line.colour * 255 * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) * (1 - alpha);
+                    image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
+                }
+
+                alpha += alphaDiff;
+            }
+        }
+
+        image->Unlock();
     }
 
     void Update(float deltaTime) {
@@ -592,10 +909,10 @@ public:
             }
         }
 
-        Line3D line3d = { Vector3f(-0.2, 0, 0.36), Vector3f(0.43, 0.23, -0.25) };
-        Line2D line;
-        line.start = scene.camera.GetScreenPos(line3d.start) * renderSettings.resolution;
-        line.end = scene.camera.GetScreenPos(line3d.end) * renderSettings.resolution;
+        //Line3D line3d = { Vector3f(-0.2, 0, 0.36), Vector3f(0.43, 0.23, -0.25) };
+        //Line2D line;
+        //line.start = scene.camera.GetScreenPos(line3d.start) * renderSettings.resolution;
+        //line.end = scene.camera.GetScreenPos(line3d.end) * renderSettings.resolution;
 
        // Prepare image texture for rendering.
         finalImage->Lock();
@@ -631,6 +948,18 @@ public:
                 finalImage->SetColourAt({ (float)x, (float)y }, colour * 255);
             }
         }
+
+        std::vector<Line2D> lines2d;
+        for each (Line3D line in lines) {
+            if ((line.start - scene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0 || (line.end - scene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0) continue;
+            Line2D line2d = { scene.camera.GetScreenPos(line.start) * renderSettings.resolution, scene.camera.GetScreenPos(line.end) * renderSettings.resolution, visSettings.lineColour, line.startAlpha, line.endAlpha };
+            line2d.start.x = (int)line2d.start.x;
+            line2d.start.y = (int)line2d.start.y;
+            line2d.end.x = (int)line2d.end.x;
+            line2d.end.y = (int)line2d.end.y;
+            lines2d.push_back(line2d);
+        }
+
         for (int y = 0; y < renderSettings.resolution.y; y++) {
             for (int x = 0; x < renderSettings.resolution.x; x++) {
 
@@ -640,17 +969,19 @@ public:
                 //toPixel.Normalize();
                 //if (toPixel.Dot(lineDirection) > 0.99999) finalImage->SetColourAt({ (float)x, (float)y }, { 255, 0, 100 });
 
-                //float grad = (line.end.y- line.start.y) / (line.end.x - line.start.x);
-                //if (abs(y - line.start.y - grad * (x - line.start.x)) < 1)
-                //    //if (x >= line.start.x && x <= line.end.x && y >= line.start.y && y <= line.end.x)
-                //        finalImage->SetColourAt({ (float)x, (float)y }, { 255, 0, 100 });
+                //for each (Line2D line in lines2d) {
+                //    float grad = (line.end.y - line.start.y) / (line.end.x - line.start.x);
+                //    if (abs(y - line.start.y - grad * (x - line.start.x)) < 1)
+                //        //if (x >= line.start.x && x <= line.end.x && y >= line.start.y && y <= line.end.x)
+                //        finalImage->SetColourAt({ (float)x, (float)y }, line.startColour);
+                //}
 
                 if (isSelectedObjectVisible[x][y]) {
                     for (int xOffset = x - 1; xOffset <= x + 1; xOffset++) {
                         for (int yOffset = y - 1; yOffset <= y + 1; yOffset++) {
                             if (xOffset >= 0 && xOffset < renderSettings.resolution.x && yOffset >= 0 && yOffset < renderSettings.resolution.y) {
                                 if (!isSelectedObjectVisible[xOffset][yOffset]) {
-                                    finalImage->SetColourAt({ (float)xOffset, (float)yOffset }, { 255, 50, 0 });
+                                    finalImage->SetColourAt({ (float)xOffset, (float)yOffset }, { 0, 0, 0 });
                                 }
                             }
                         }
@@ -660,10 +991,25 @@ public:
         }
         finalImage->Unlock();
 
+        for each (Line2D line in lines2d) {
+            DrawBresenhamLine(finalImage, line);
+        }
+
+        //DrawBresenhamLine(finalImage, { Vector2f(10, 200), Vector2f(300, 10), {0, 255, 0}, 0, 1 });
+
         SDL_SetRenderTarget(GetRenderer()->GetRawRenderer(), finalImage2);
         SDL_RenderCopy(GetRenderer()->GetRawRenderer(), finalImage->GetRawTexture(), NULL, NULL);
-        SDL_SetRenderDrawColor(GetRenderer()->GetRawRenderer(), 255, 0, 0, 255);
         //SDL_RenderDrawLine(GetRenderer()->GetRawRenderer(), line.start.x, line.start.y, line.end.x, line.end.y);
+
+        //if (showVisualizualisation) {
+        //    for each (Line2D line in lines2d) {
+        //        SDL_SetRenderDrawColor(GetRenderer()->GetRawRenderer(), visSettings.lineColour.x * 255, visSettings.lineColour.y * 255, visSettings.lineColour.z * 255, line.endAlpha * 255);
+        //        SDL_RenderDrawLine(GetRenderer()->GetRawRenderer(), line.start.x, line.start.y, line.end.x, line.end.y);
+        //    }
+        //}
+                //SDL_SetRenderDrawColor(GetRenderer()->GetRawRenderer(), 255, 255, 0, 155);
+                //SDL_RenderDrawLine(GetRenderer()->GetRawRenderer(), 10, 200, 200, 10);
+
         SDL_SetRenderTarget(GetRenderer()->GetRawRenderer(), NULL);
 
         // Process input for ImGui.
@@ -723,7 +1069,13 @@ private:
     bool loadedNewFile;
     ImVec4 ambientLightColour;
 
+    std::vector<Line3D> lines;
+    RayVisualizationSettings visSettings;
+
     float rendererFps;
+
+    bool darkMode;
+    bool showVisualizualisation;
 };
 
 int main(int argc, char* argv[]) {

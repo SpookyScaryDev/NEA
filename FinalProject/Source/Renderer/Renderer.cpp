@@ -76,7 +76,7 @@ Colour Renderer::GatherDirectLighting(const Scene& scene, const RayPayload& payl
         Vector3f direction = obj->Sample(payload.point, pdf2, rnd);
         if (direction == Vector3f()) direction = obj->GetPosition() - payload.point;
         direction.Normalize();
-        Ray toLight = Ray(payload.point, direction);
+        Ray toLight = Ray(payload.point + payload.normal * 0.01, direction);
         RayPayload toLightPayload;
         scene.ClosestHit(toLight, 0.001, FLT_MAX, toLightPayload);
         if (toLightPayload.object == obj) {

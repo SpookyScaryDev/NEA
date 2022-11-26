@@ -58,6 +58,7 @@ Vector2f Camera::GetScreenPos(Vector3f point) const {
 	//Vector3f posOnViewport2 = GetViewportPos(screenPos);
 
 	//printf("(%f, %f, %f) (%f, %f, %f)\n", posOnViewport.x, posOnViewport.y, posOnViewport.z, posOnViewport2.x, posOnViewport2.y, posOnViewport2.z);
+
 	return screenPos;
 }
 

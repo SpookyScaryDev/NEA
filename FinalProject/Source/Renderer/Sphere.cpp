@@ -63,7 +63,7 @@ bool Sphere::Intersect(const Ray& ray, float min, float max, RayPayload& payload
 }
 
 Vector3f Sphere::Sample(const Vector3f& point, float& pdf, std::mt19937& rnd) {
-	return Sampling::SamplePointInCone(point, mPosition, radius, pdf, rnd);
+	return Sampling::SamplePointInCone(point, mPosition, mScale.x, pdf, rnd);
 }
 
 }

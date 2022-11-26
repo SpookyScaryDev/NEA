@@ -19,7 +19,7 @@ void Window::Init(const char* name, int width, int height) {
         SDL_WINDOWPOS_UNDEFINED,
         mWidth,
         mHeight,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_MAXIMIZED
     );
 
     if (mRawSDLWindow == nullptr) {

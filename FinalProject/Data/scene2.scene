@@ -488,6 +488,38 @@
             ],
             "show": true,
             "type": "mesh"
+        },
+        {
+            "material": {
+                "colour": [
+                    0.8999999761581421,
+                    0.8999999761581421,
+                    0.8999999761581421
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 1.0,
+                "type": "lambertian"
+            },
+            "name": "Object 15",
+            "path": "amogus.obj",
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "mesh"
         }
     ]
 }
