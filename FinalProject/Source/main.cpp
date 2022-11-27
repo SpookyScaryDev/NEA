@@ -32,7 +32,7 @@ using namespace Prototype;
 struct RayVisualizationSettings {
     int maxDepth = 4;
     int initialRays = 8;
-    float maxDistance = 0.5;
+    float maxDistance = 1.5;
     Colour lineColour = { 1, 0, 0 };
 };
 
@@ -49,9 +49,11 @@ public:
         // Need to use an array as texture data wraps around after 255!
         image = new Colour * [width];
         isSelectedObjectVisible = new bool * [width];
+        depthMap = new float * [width];
         for (int i = 0; i < width; i++) {
             image[i] = new Colour[height];
             isSelectedObjectVisible[i] = new bool[height];
+            depthMap[i] = new float[height];
         }
 
         renderSettings = RenderSettings();
@@ -445,8 +447,6 @@ public:
             }
         }
 
-        std::cout << rays.size() << std::endl;
-
         std::random_device r;
         std::seed_seq seed{ r(), r(), r(), r(), r(), r(), r(), r() };
         std::mt19937 rnd(seed);
@@ -458,6 +458,43 @@ public:
             line.startAlpha = 1;
             TraceVisRay(ray, line, 0, 0, rnd);
         }
+    }
+
+    bool IsLineVisible(float depth, const Ray& toLine, const Line3D& line) {
+        //Vector3f toLineEnd = toLine.GetPointAt(depth);
+        //float R21 = (toLineEnd - toLine.GetOrigin()).Dot(toLineEnd - toLine.GetOrigin());
+        //float R22 = (line.end - line.start).Dot(line.end - line.start);
+        //float D4321 = (line.end - line.start).Dot(toLineEnd - toLine.GetOrigin());
+        //float D3121 = (line.start - toLine.GetOrigin()).Dot(toLineEnd - toLine.GetOrigin());
+        //float D4331 = (line.end - line.start).Dot(line.start - toLine.GetOrigin());
+        //float D4332 = (line.end - line.start).Dot(line.start - toLineEnd);
+        //float s = (D4321 * D4331 + D3121 * R22) / (R21 * R22 + D4321 * D4321);
+        //float t = (D4321 * D3121 - D3121 * R21) / (R21 * R22 + D4321 * D4321);
+        ////Vector3f closestPointOnLine = line.start + t * (line.end - line.start);
+        //Vector3f closestPointOnLine = toLine.GetOrigin() + s * (toLineEnd - toLine.GetOrigin());
+        //return (closestPointOnLine - scene.camera.position).Magnitude() < depth && s >= 0 && s <= 1;
+        ////return s >= 0 && s <= 1;
+        ////float closestOnLineToDepth = -D4332 / R22;
+        ////Vector3f closestPos = line.start + closestOnLineToDepth * (line.end - line.start);
+        ////return (closestPos - scene.camera.position).Magnitude() < depth;
+
+        Vector3f posDiff = line.start - toLine.GetOrigin();
+        Vector3f crossNormal = toLine.GetDirection().Cross(line.end - line.start);
+        crossNormal.Normalize();
+        Vector3f rejection = posDiff - toLine.GetDirection().Dot(posDiff) * toLine.GetDirection() - crossNormal.Dot(posDiff) * crossNormal;
+        rejection.Normalize();
+        Vector3f closestApproach = line.start - (line.end - line.start) * rejection / (line.end - line.start).Dot(rejection);
+        printf("%f %f\n", (closestApproach - scene.camera.position).Magnitude(), depth);
+        return (closestApproach - scene.camera.position).Magnitude() <= depth;
+
+        //Vector3f d2 = line.end - line.start;
+        //d2.Normalize();
+        //Vector3f n = toLine.GetDirection().Dot(d2);
+        //n.Normalize();
+        //Vector3f n2 = (d2).Cross(n);
+        //n2.Normalize();
+        //Vector3f c1 = toLine.GetOrigin() + ((line.start - toLine.GetOrigin()).Dot(n2) / (toLine.GetDirection().Dot(n2))) * toLine.GetDirection();
+        //return (c1 - scene.camera.position).Magnitude() < depth;
     }
 
     void UpdateImGui() {
@@ -814,7 +851,7 @@ public:
 
     }
 
-    void DrawBresenhamLine(Texture* image, Line2D line) {
+    void DrawBresenhamLine(Texture* image, Line2D line, Line3D line3d) {
         image->Lock();
         float m = (line.end.y - line.start.y) / (line.end.x - line.start.x);
         float c = line.start.y - m * line.start.x;
@@ -840,8 +877,12 @@ public:
                 if (alpha > 1) alpha = 1;
 
                 if (xCoord >= 0 && xCoord < image->GetWidth() && yCoord >= 0 && yCoord < image->GetHeight()) {
-                    colour = line.colour * 255 * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) * (1 - alpha);
-                    image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
+                    Vector3f toLine = scene.camera.GetViewportPos({ (float)xCoord, (float)yCoord });
+                    toLine.Normalize();
+                    if (IsLineVisible(depthMap[xCoord][yCoord], Ray(scene.camera.position, toLine), line3d)) {
+                        colour = line.colour * 255 * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) * (1 - alpha);
+                        image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
+                    }
                 }
 
                 alpha += alphaDiff;
@@ -860,9 +901,14 @@ public:
                 if (alpha < 0) alpha = 0;
                 if (alpha > 1) alpha = 1;
 
+
                 if (xCoord >= 0 && xCoord < image->GetWidth() && yCoord >= 0 && yCoord < image->GetHeight()) {
-                    colour = line.colour * 255 * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) * (1 - alpha);
-                    image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
+                    Vector3f toLine = scene.camera.GetViewportPos({ (float)xCoord, (float)yCoord });
+                    toLine.Normalize();
+                    if (IsLineVisible(depthMap[xCoord][yCoord], Ray(scene.camera.position, toLine), line3d)) {
+                        colour = line.colour * 255 * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) * (1 - alpha);
+                        image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
+                    }
                 }
 
                 alpha += alphaDiff;
@@ -888,7 +934,7 @@ public:
         frame++;
 
         std::chrono::system_clock::time_point previousTime = std::chrono::system_clock::now();
-        image = GetRenderer()->RenderScene(scene, image, renderSettings, frame);
+        image = GetRenderer()->RenderScene(scene, image, depthMap, renderSettings, frame);
         std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
         std::chrono::duration<float> elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(currentTime - previousTime);
         rendererFps = elapsed.count();
@@ -949,16 +995,6 @@ public:
             }
         }
 
-        std::vector<Line2D> lines2d;
-        for each (Line3D line in lines) {
-            if ((line.start - scene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0 || (line.end - scene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0) continue;
-            Line2D line2d = { scene.camera.GetScreenPos(line.start) * renderSettings.resolution, scene.camera.GetScreenPos(line.end) * renderSettings.resolution, visSettings.lineColour, line.startAlpha, line.endAlpha };
-            line2d.start.x = (int)line2d.start.x;
-            line2d.start.y = (int)line2d.start.y;
-            line2d.end.x = (int)line2d.end.x;
-            line2d.end.y = (int)line2d.end.y;
-            lines2d.push_back(line2d);
-        }
 
         for (int y = 0; y < renderSettings.resolution.y; y++) {
             for (int x = 0; x < renderSettings.resolution.x; x++) {
@@ -991,8 +1027,17 @@ public:
         }
         finalImage->Unlock();
 
-        for each (Line2D line in lines2d) {
-            DrawBresenhamLine(finalImage, line);
+        //GenerateLines();
+        if (showVisualizualisation) {
+            for each (Line3D line in lines) {
+                if ((line.start - scene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0 || (line.end - scene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0) continue;
+                Line2D line2d = { scene.camera.GetScreenPos(line.start) * renderSettings.resolution, scene.camera.GetScreenPos(line.end) * renderSettings.resolution, visSettings.lineColour, line.startAlpha, line.endAlpha };
+                line2d.start.x = (int)line2d.start.x;
+                line2d.start.y = (int)line2d.start.y;
+                line2d.end.x = (int)line2d.end.x;
+                line2d.end.y = (int)line2d.end.y;
+                DrawBresenhamLine(finalImage, line2d, line);
+            }
         }
 
         //DrawBresenhamLine(finalImage, { Vector2f(10, 200), Vector2f(300, 10), {0, 255, 0}, 0, 1 });
@@ -1046,6 +1091,7 @@ public:
 private:
     Colour** image;       // The image generated by the renderer.
     bool** isSelectedObjectVisible;
+    float** depthMap;
     Texture* finalImage;  // The image which will be drawn.
     SDL_Texture* finalImage2;  // The image which will be drawn.
 

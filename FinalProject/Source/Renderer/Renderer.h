@@ -33,11 +33,11 @@ public:
     void                    Clear();                              // Clear screen to the clear colour.
     void                    Refresh();                            // Draw to the screen.
 
-    Colour                  TraceRay(Scene& scene, const Ray& ray, int depth, const RenderSettings& settings, std::mt19937& rnd);
-    Colour**                RenderScene(Scene scene, Colour** image, const RenderSettings& settings, int frame = 0);
+    Colour                  TraceRay(Scene& scene, float* depthMap, const Ray& ray, int depth, const RenderSettings& settings, std::mt19937& rnd);
+    Colour**                RenderScene(Scene scene, Colour** image, float** depthMap, const RenderSettings& settings, int frame = 0);
 
 private:
-    void                    RenderStrip(Scene scene, Colour** image, const RenderSettings& settings, int frame, int start, int end);
+    void                    RenderStrip(Scene scene, Colour** image, float** depthMap, const RenderSettings& settings, int frame, int start, int end);
     Colour                  GatherDirectLighting(const Scene& scene, const RayPayload& payload, std::mt19937& rnd);
 
     SDL_Renderer*           mRawRenderer;

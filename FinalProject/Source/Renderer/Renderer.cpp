@@ -99,7 +99,7 @@ Colour Renderer::GatherDirectLighting(const Scene& scene, const RayPayload& payl
     return light;
 }
 
-Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderSettings& settings, std::mt19937& rnd) {
+Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int depth, const RenderSettings& settings, std::mt19937& rnd) {
     // Don't go on forever!
     if (depth >= settings.maxDepth) {
         return Vector3f();
@@ -114,6 +114,11 @@ Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderS
         payload.material->Scatter(ray, newRay, pdf, payload, rnd);
         Colour colour = Vector3f(0, 0, 0);
 
+        if (depth == 1) {
+            *depthMap = payload.t;
+            if (payload.object->material.materialType == MaterialType::Glass) *depthMap *= -1;
+        }
+
         if (settings.directLightSampling) {
             Colour light = GatherDirectLighting(scene, payload, rnd);
 
@@ -126,15 +131,19 @@ Colour Renderer::TraceRay(Scene& scene, const Ray& ray, int depth, const RenderS
             colour += payload.material->Emit();
         }
 
-        return colour + TraceRay(scene, newRay, depth, settings, rnd) * payload.material->colour;
+        return colour + TraceRay(scene, depthMap, newRay, depth, settings, rnd) * payload.material->colour;
     }
     else {
+        if (depth == 1) {
+            *depthMap = 9999999999999999999;
+        }
+
         return settings.ambientLight;
     }
     return { 0, 0, 0 };
 }
 
-void Renderer::RenderStrip(Scene scene, Colour** image, const RenderSettings& settings, int frame, int start, int end) {
+void Renderer::RenderStrip(Scene scene, Colour** image, float** depthMap, const RenderSettings& settings, int frame, int start, int end) {
     //srand(static_cast<int>(time(0)));
     std::random_device r;
     std::seed_seq seed{ r(), r(), r(), r(), r(), r(), r(), r() };
@@ -154,10 +163,12 @@ void Renderer::RenderStrip(Scene scene, Colour** image, const RenderSettings& se
                     screenPos.y = (y + (dist(rnd) - 0.5)) / (settings.resolution.y);
 
                     Vector3f viewportPosRand = scene.camera.GetViewportPos(screenPos);
+                    viewportPosRand.Normalize();
                     Ray rayRand = Ray(scene.camera.position, viewportPosRand);
 
 
-                    colour += TraceRay(scene, rayRand, 0, settings, rnd);
+                    colour += TraceRay(scene, &depthMap[x][y], rayRand, 0, settings, rnd);
+                    //if (depthMap[x][y] > 0) colour += Vector3f(1, 1, 1) / depthMap[x][y];
                 }
                 colour /= settings.samples;
 
@@ -176,13 +187,13 @@ void Renderer::RenderStrip(Scene scene, Colour** image, const RenderSettings& se
     }
 }
 
-Colour** Renderer::RenderScene(Scene scene, Colour** image, const RenderSettings& settings, int frame) {
+Colour** Renderer::RenderScene(Scene scene, Colour** image, float** depthMap, const RenderSettings& settings, int frame) {
     int strips = 10;
     std::vector<std::thread> threads;
 
     int size = settings.resolution.x / strips;
     for (int i = 0; i < strips; i++) {
-        threads.push_back(std::thread([=] { RenderStrip(scene, image, settings, frame, i * size, (i + 1) * size); }));
+        threads.push_back(std::thread([=] { RenderStrip(scene, image, depthMap, settings, frame, i * size, (i + 1) * size); }));
     }
 
     for (int i = 0; i < threads.size(); i++) {
