@@ -20,9 +20,8 @@ Triangle::Triangle(Vector3f position, Vector3f verticies[3], Material material) 
 }
 
 bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
-    // TODO: Go through this!
-
     if (mDirty) {
+        // Apply transformation matrix
         mTransform = Matrix4x4f::Translate(mPosition) * Matrix4x4f::Rotate(mRotation) * Matrix4x4f::Scale(mScale);
         mTransformedVerticies[0] = mTransform * mVerticies[0];
         mTransformedVerticies[1] = mTransform * mVerticies[1];
@@ -30,26 +29,35 @@ bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& paylo
         mDirty = false;
     }
 
-    Vector3f v0v1 = mTransformedVerticies[1] - mTransformedVerticies[0];
-    Vector3f v0v2 = mTransformedVerticies[2] - mTransformedVerticies[0];
-    Vector3f N = v0v1.Cross(v0v2);  //N 
-    Vector3f pvec = ray.GetDirection().Cross(v0v2);
-    float det = v0v1.Dot(pvec);
-    // ray and triangle are parallel if det is close to 0
-    if (fabs(det) < 0.000001) return false;
-    float invDet = 1 / det;
+    Vector3f E1 = mTransformedVerticies[1] - mTransformedVerticies[0];
+    Vector3f E2 = mTransformedVerticies[2] - mTransformedVerticies[0];
+    Vector3f T = ray.GetOrigin() - mTransformedVerticies[0];
+    Vector3f D = ray.GetDirection();
 
-    Vector3f tvec = ray.GetOrigin() - mTransformedVerticies[0];
-    float u = tvec.Dot(pvec) * invDet;
-    if (u < 0 || u > 1) return false;
+    Vector3f P = D.Cross(E2); 
+    Vector3f Q = T.Cross(E1);
 
-    Vector3f qvec = tvec.Cross(v0v1);
-    float v = ray.GetDirection().Dot(qvec) * invDet;
-    if (v < 0 || u + v > 1) return false;
+    // Don't cause a divide by 0 error!
+    if (abs(P.Dot(E1)) < 0.00001) return false;
 
-    float t = v0v2.Dot(qvec) * invDet;
+    Vector3f tuv = (1 / P.Dot(E1)) * Vector3f(Q.Dot(E2), P.Dot(T), Q.Dot(D));
+
+    float t = tuv[0];
+    float u = tuv[1];
+    float v = tuv[2];
+
+    // Must lie within the ray range
     if (t < min || t > max) return false;
 
+    // u and v must obey barycentric co-ordinates
+    if (u < 0) return false;
+    if (v < 0) return false;
+    if (u + v > 1) return false;
+
+    // Normal is always this due to vertex order in obj file
+    Vector3f N = E1.Cross(E2);
+
+    // Hit the triangle!
     payload.t = t;
     payload.point = ray.GetPointAt(payload.t);
     payload.normal = N;
@@ -58,7 +66,7 @@ bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& paylo
     payload.material = &material;
     payload.object = this;
 
-    return true;  //this ray hits the triangle 
+    return true;
 }
 
 }

@@ -39,6 +39,7 @@ void Mesh::LoadFromFile(const char* filePath) {
 	std::string line;
 	std::vector<std::string> splitLine;
 	while (std::getline(file, line)) {
+		if (line == "") continue;
 
 		splitLine = Split(line, ' ');
 
@@ -78,6 +79,7 @@ void Mesh::LoadFromFile(const char* filePath) {
 
 bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
 	if (mDirty) {
+		// Apply transformations to mesh
 		for each (Triangle * triangle in mFaces) {
 			Object* object = (Object*)triangle;
 
@@ -86,6 +88,7 @@ bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) 
 			object->SetScale(mScale);
 		}
 
+		// TODO: check!!
 		Vector3f nonRotatedTransformedMin = mMin * mScale;
 		Vector3f nonRotatedTransformedMax = mMax * mScale;
 
@@ -108,14 +111,14 @@ bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) 
 		mCenter.x = (mTransformedMin.x + mTransformedMax.x) / 2;
 		mCenter.y = (mTransformedMin.y + mTransformedMax.y) / 2;
 		mCenter.z = (mTransformedMin.z + mTransformedMax.z) / 2;
+		////////
 
 		mRadius = (mTransformedMax - mTransformedMin).Magnitude() / 2;
 
 		mDirty = false;
 	}
 
-	// TODO: OOF!
-
+	// TODO: check!!
 	float tx1 = (mTransformedMin.x - ray.GetOrigin().x) / ray.GetDirection().x;
 	float tx2 = (mTransformedMax.x - ray.GetOrigin().x) / ray.GetDirection().x;
 
@@ -133,6 +136,7 @@ bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) 
 
 	tmin = fmax(tmin, fmin(tz1, tz2));
 	tmax = fmin(tmax, fmax(tz1, tz2));
+	////////
 
 	if (tmax >= tmin) {
 		RayPayload closestPayload;

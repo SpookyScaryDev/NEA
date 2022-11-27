@@ -33,26 +33,32 @@ bool Sphere::Intersect(const Ray& ray, float min, float max, RayPayload& payload
 	float c = (ray.GetOrigin() - mPosition).Dot((ray.GetOrigin() - mPosition)) - mScale.x * mScale.x;
 	float d = b * b - 4.0 * a * c;
 
+	// Sphere was hit
 	if (d >= 0) {
+		// Work out the two intersection points
 		float t1 = (-b - sqrt(d)) / (2.0 * a);
 		float t2 = (-b + sqrt(d)) / (2.0 * a);
+
+		// Let t be the closer point which lies within the ray range
 		float t = 0;
 		if (t1 <= max && t1 >= min) t = t1;
 		else if (t2 <= max && t2 >= min) t = t2;
 		else return false;
 
+		// If t is within the acceptable range
 		if (t <= max && t >= min) {
 			payload.t = t;
 			payload.point = ray.GetPointAt(payload.t);
 			payload.normal = payload.point - mPosition;
 			payload.normal.Normalize();	
 			if (payload.normal.Dot(ray.GetDirection()) > 0) {
+				// Came from inside
 				payload.frontFace = false;
 			}
 			else {
+				// Came from outside
 				payload.frontFace = true;
 			}
-			//payload.frontFace = payload.normal.Dot(ray.GetDirection()) < 0 ? false : true;
 			payload.material = &material;
 			payload.object = this;
 			return true;

@@ -7,7 +7,9 @@ namespace Prototype {
 Ray::Ray(const Vector3f& origin, const Vector3f& direction) :
     mOrigin(origin), 
     mDirection(direction)
-{}
+{
+    mDirection.Normalize();
+}
 
 Vector3f Ray::GetPointAt(float u) const {
     return mOrigin + mDirection * u;

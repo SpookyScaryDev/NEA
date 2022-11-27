@@ -117,6 +117,7 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
         if (depth == 1) {
             *depthMap = payload.t;
             if (payload.object->material.materialType == MaterialType::Glass) *depthMap *= -1;
+            //TODO: depthmap return payload.material->colour / payload.t * 2;
         }
 
         if (settings.directLightSampling) {
@@ -171,6 +172,8 @@ void Renderer::RenderStrip(Scene scene, Colour** image, float** depthMap, const 
                     //if (depthMap[x][y] > 0) colour += Vector3f(1, 1, 1) / depthMap[x][y];
                 }
                 colour /= settings.samples;
+
+                //if (depthMap[x][y] != 0) colour = Vector3f(1, 1, 1) / depthMap[x][y];
 
                 // Average colour over time.
                 Colour oldColour = image[x][y];

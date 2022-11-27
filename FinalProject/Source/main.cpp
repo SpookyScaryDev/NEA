@@ -30,128 +30,70 @@
 using namespace Prototype;
 
 struct RayVisualizationSettings {
-    int maxDepth = 4;
-    int initialRays = 8;
-    float maxDistance = 1.5;
-    Colour lineColour = { 1, 0, 0 };
+    bool      enable             = false;
+    bool      updateRegularly    = true;
+    int       framesPerUpdate    = 2;
+    int       maxBounceDepth     = 4;
+    int       initialRays        = 8;
+    bool      shortenRays        = true;
+    float     shortenedRayLength = 0.3;
+    bool      showAllRays        = true;
+    float     maxDistance        = 1.5;
+    bool      sameColour         = false;
+    Colour    lineColour         = { 1, 0, 0 };
 };
 
-class PrototypeApp : public Application {
+class FinalApp : public Application {
 public:
-    PrototypeApp(const char* file) : Application("Ray Tracing Optics Simulator", 1900 * 0.75, 1080 * 0.75) {
-        darkMode = true;
+    FinalApp(const char* file) : Application("Ray Tracing Optics Simulator", 1900 * 0.75, 1080 * 0.75) {
+        mDarkMode = true;
+
+        // Initialize UI
         SetUpImGui();
 
-        width = 450 * 1;
-        height = 225 * 1;
-        aspectRatio = (float)width / (float)height;
+        // Internal resolution
+        mInternalWidth = 450 * 1;
+        mInternalHeight = 225 * 1;
+        mAspectRatio = (float)mInternalWidth / (float)mInternalHeight;
 
         // Need to use an array as texture data wraps around after 255!
-        image = new Colour * [width];
-        isSelectedObjectVisible = new bool * [width];
-        depthMap = new float * [width];
-        for (int i = 0; i < width; i++) {
-            image[i] = new Colour[height];
-            isSelectedObjectVisible[i] = new bool[height];
-            depthMap[i] = new float[height];
+        mRenderedImage = new Colour * [mInternalWidth];
+        mIsSelectedObjectVisible = new bool * [mInternalWidth];
+        mDepthBuffer = new float * [mInternalWidth];
+        mDepthBufferOld = new float * [mInternalWidth];
+        for (int i = 0; i < mInternalWidth; i++) {
+            mRenderedImage[i] = new Colour[mInternalHeight];
+            mIsSelectedObjectVisible[i] = new bool[mInternalHeight];
+            mDepthBuffer[i] = new float[mInternalHeight];
+            mDepthBufferOld[i] = new float[mInternalHeight];
         }
 
-        renderSettings = RenderSettings();
-        renderSettings.resolution = { (float)width, (float)height };
-        renderSettings.maxDepth = 10;
-        renderSettings.samples = 1;
-        renderSettings.ambientLight = Vector3f(1, 1, 1);
-        renderSettings.checkerboard = false;
-        renderSettings.directLightSampling = true;
+        // Default renderer settings
+        mPreviewRenderSettings = RenderSettings();
+        mPreviewRenderSettings.resolution = { (float)mInternalWidth, (float)mInternalHeight };
+        mPreviewRenderSettings.maxDepth = 10;
+        mPreviewRenderSettings.samples = 1;
+        mPreviewRenderSettings.ambientLight = Vector3f(1, 1, 1);
+        mPreviewRenderSettings.checkerboard = false;
+        mPreviewRenderSettings.directLightSampling = true;
 
-        ambientLightColour = { (float)renderSettings.ambientLight.x, (float)renderSettings.ambientLight.y, (float)renderSettings.ambientLight.z, 1 };
-
-        redraw = false;
-        loadedNewFile = true;
+        mRedrawThisFrame = false;
+        mLoadedSceneThisFrame = true;
 
         // The image which will be rendered on the GUI.
-        finalImage = new Texture(width, height);
-        finalImage2 = SDL_CreateTexture(Application::GetApp()->GetRenderer()->GetRawRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
+        mOutputTexture = new Texture(mInternalWidth, mInternalHeight);
+        SDL_SetTextureScaleMode(mOutputTexture->GetRawTexture(), SDL_ScaleModeBest); // TODO: Put in Texture class
 
-        SDL_SetTextureScaleMode(finalImage2, SDL_ScaleModeBest);
+        if (!file) mScene = Scene::LoadFromFile("scene.scene");
+        else mScene = mScene = Scene::LoadFromFile(file);
 
-        if (file) std::cout << file << std::endl;
-        if (!file) GenerateScene();
-        else scene = scene.LoadFromFile(file);
+        mSelectedObject = -1;
 
-        selectedObject = -1;
-        newObjectType = 0;
-        newObjectPath = "";
-        newObjectName = "Object " + std::to_string(scene.GetObjectCount());
+        mNewObjectType = 0;
+        mNewObjectPath = "";
+        mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
 
-        showVisualizualisation = false;
-
-        GenerateLines();
-    }
-
-    void GenerateScene() {
-        // Generate a test scene.
-        srand(2);
-
-        Material ground = Material(MaterialType::Lambertian, { 0.5, 0.5, 0.5 });
-        scene.AddObject("Ground", (Object*) new Sphere({ 0, -1000, -2 }, 1000, ground));
-
-
-        // Add random objects.
-        for (int i = -1; i <= 1; i += 1) {
-            for (int j = -1; j <= 1; j += 1) {
-                Material mat;
-                switch (rand() % 4) {
-                case 0:
-                    mat = Material(MaterialType::Lambertian, { rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f , rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f, rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f });
-                    break;
-
-                case 1:
-                    mat = Material(MaterialType::Glossy, { rand() / (RAND_MAX + 1.0f * 0.9f + 0.1f) , rand() / (RAND_MAX + 1.0f * 0.9f + 0.1f) , rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f }, rand() / (RAND_MAX + 1.0f));
-                    break;
-
-                case 2:
-                    mat = Material(MaterialType::Glass, { rand() / (RAND_MAX + 1.0f * 0.9f + 0.1f) , rand() / (RAND_MAX + 1.0f * 0.9f + 0.1f) , rand() / (RAND_MAX + 1.0f) * 0.9f + 0.1f }, 0, 1.5);
-                    break;
-
-                default:
-                    break;
-                }
-
-                float size = (rand() / (RAND_MAX + 1.0)) * 0.1 + 0.07;
-                float yPos = size;
-                if (!(i == 0 && j == 0))
-                    scene.AddObject(("Sphere " + std::to_string(scene.GetObjectCount() + 1)).c_str(), (Object*) new Sphere({i * 0.7f, yPos, j * 0.7f - 2}, size, mat));
-            }
-        }
-
-        Material metal = Material(MaterialType::Glossy, { 0.8, 0.8, 0.8 }, 0);
-        Material glass = Material(MaterialType::Glass, { 1.0, 1.0, 1.0 }, 0, 1.44);
-
-        Material light = Material(MaterialType::Lambertian, { 1, 1, 1 }, 1, 1, 20);
-
-        scene.AddObject("Big Metal Sphere", (Object*)new Sphere({ 1.6, 0.35, -2 }, 0.35, metal));
-        scene.AddObject("Big Glass Sphere", (Object*)new Sphere({ 0, 0.375, -2 },  0.375, glass));
-
-        scene.AddObject("Light", (Object*)new Sphere({0,   1.5, -2}, 0.3, light));
-
-        Material cube1 = Material(MaterialType::Lambertian, { 0.5, 0.5, 1 }, 0);
-        scene.AddObject("Cube 1", (Object*)new Mesh({ -0.46, 0.1, 0-0.2 }, "cube.obj", cube1));
-
-        Material cube2mat = Material(MaterialType::Lambertian, { 0.5, 1, 0.5 }, 0);
-        Object* cube2 = (Object*)new Mesh({ 0.46, 0.06, 0 - 0.25 }, "cube.obj", cube2mat);
-        cube2->SetScale({ 0.6, 0.6, 0.6 });
-        scene.AddObject("Cube 2", cube2);
-
-        Material amogus = Material(MaterialType::Lambertian, { 0.8, 0, 0 }, 0);
-        scene.AddObject("Amogus", (Object*)new Mesh({ -0.18, 0, 0.36 }, "amogus.obj", amogus));
-
-        Camera camera = Camera(aspectRatio, 3, { 0,  0.13, 0.8 });
-
-        //scene.SetCamera(camera);
-        scene = Scene::LoadFromFile("scene.scene");
-
-        //scene.SaveToFile("scene.scene");
+        GenerateVisualization();
     }
 
     void SetUpImGui() {
@@ -161,13 +103,7 @@ public:
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO(); (void)io;
-        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-        // Setup Dear ImGui style
-        //ImGui::StyleColorsDark();
-        //ImGui::StyleColorsClassic();
 
         // Setup Platform/Renderer backends
         ImGui_ImplSDL2_InitForSDLRenderer(GetWindow()->GetRawWindow(), GetRenderer()->GetRawRenderer());
@@ -175,7 +111,7 @@ public:
 
         io.Fonts->AddFontFromFileTTF("Roboto-Regular.ttf", 15.0f);
 
-        SetImGuiStyle(darkMode);
+        SetImGuiStyle(mDarkMode);
     }
 
     void SetImGuiStyle(bool darkMode) {
@@ -185,37 +121,7 @@ public:
         style.WindowBorderSize = 0;
 
         if (darkMode) {
-            //style.Alpha = 1.0f;
-            //style.DisabledAlpha = 0.6000000238418579f;
-            //style.WindowPadding = ImVec2(8.0f, 8.0f);
-            //style.WindowRounding = 0.0f;
-            //style.WindowBorderSize = 1.0f;
-            //style.WindowMinSize = ImVec2(32.0f, 32.0f);
-            //style.WindowTitleAlign = ImVec2(0.0f, 0.5f);
-            //style.WindowMenuButtonPosition = ImGuiDir_Left;
-            //style.ChildRounding = 0.0f;
-            //style.ChildBorderSize = 1.0f;
-            //style.PopupRounding = 0.0f;
-            //style.PopupBorderSize = 1.0f;
-            //style.FramePadding = ImVec2(4.0f, 3.0f);
-            //style.FrameRounding = 0.0f;
-            //style.FrameBorderSize = 0.0f;
-            //style.ItemSpacing = ImVec2(8.0f, 4.0f);
-            //style.ItemInnerSpacing = ImVec2(4.0f, 4.0f);
-            //style.CellPadding = ImVec2(4.0f, 2.0f);
-            //style.IndentSpacing = 21.0f;
-            //style.ColumnsMinSpacing = 6.0f;
-            //style.ScrollbarSize = 14.0f;
-            //style.ScrollbarRounding = 0.0f;
-            //style.GrabMinSize = 10.0f;
-            //style.GrabRounding = 0.0f;
-            //style.TabRounding = 0.0f;
-            //style.TabBorderSize = 0.0f;
-            //style.TabMinWidthForCloseButton = 0.0f;
-            //style.ColorButtonPosition = ImGuiDir_Right;
-            //style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
-            //style.SelectableTextAlign = ImVec2(0.0f, 0.0f);
-
+            // Created in ImThemes by modifying the Visual Studio theme.
             style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
             style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.5921568870544434f, 0.5921568870544434f, 0.5921568870544434f, 1.0f);
             style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1725211292505264f, 0.172521248459816f, 0.1802574992179871f, 1.0f);
@@ -273,36 +179,13 @@ public:
         else {
             ImGui::StyleColorsLight();
         }
-
-       //style.Colors[ImGuiCol_PopupBg] = style.Colors[ImGuiCol_TitleBg];
-
-        //for (int i = 0; i <= ImGuiCol_COUNT; i++) {
-        //    ImGuiCol_ colourID = (ImGuiCol_)i;
-        //    ImVec4& colour = style.Colors[i];
-        //    // Make window and title bar background lighter.
-        //    if (darkMode && (colourID == ImGuiCol_WindowBg || colourID == ImGuiCol_TitleBg)) {
-        //        colour.x = 3 * colour.x;
-        //        colour.y = 3 * colour.y;
-        //        colour.z = 3 * colour.z;
-        //    }
-        //    // Make backgrounds darker. If statement condition taken from https://gist.github.com/dougbinks/8089b4bbaccaaf6fa204236978d165a9.
-        //    if (!darkMode && (colourID != ImGuiCol_ModalWindowDimBg) &&
-        //        (colourID != ImGuiCol_NavWindowingDimBg) &&
-        //        ((colourID == ImGuiCol_FrameBg) ||
-        //            (colourID == ImGuiCol_WindowBg) ||
-        //            (colourID == ImGuiCol_ChildBg))) {
-        //        colour.x = 0.9 * colour.x;
-        //        colour.y = 0.9 * colour.y;
-        //        colour.z = 0.9 * colour.z;
-        //    }
-        //}
     }
 
     bool OpenFile(std::string fileterList, std::string& filePath) {
         nfdchar_t* path = NULL;
         nfdresult_t result = NFD_OpenDialog(fileterList.c_str(), NULL, &path);
         if (result == nfdresult_t::NFD_ERROR) {
-            Error(std::string("Failed to load file! ") + NFD_GetError());
+            Error(std::string("NFD: Failed to load file! ") + NFD_GetError());
             return false;
         }
         if (result == nfdresult_t::NFD_CANCEL) return false;
@@ -315,7 +198,7 @@ public:
         nfdchar_t* path = NULL;
         nfdresult_t result = NFD_SaveDialog(fileterList.c_str(), NULL, &path);
         if (result == nfdresult_t::NFD_ERROR) {
-            Error(std::string("Failed to save file! ") + NFD_GetError());
+            Error(std::string("NFD: Failed to save file! ") + NFD_GetError());
             return false;
         }
         if (result == nfdresult_t::NFD_CANCEL) return false;
@@ -331,19 +214,27 @@ public:
     }
 
     void New() {
-        redraw = true;
-        scene = Scene();
+        mRedrawThisFrame = true;
+        mScene = Scene();
+
+        mSelectedObject = -1;
+
+        mNewObjectType = 0;
+        mNewObjectPath = "";
+        mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
+
+        GenerateVisualization();
     }
 
     void Save() {
-        if (scene.GetName() != "") scene.Save();
+        if (mScene.GetName() != "") mScene.Save();
         else SaveSceneAs();
     }
 
     void SaveSceneAs() {
         std::string path;
         if (SaveAs("scene", path)) {
-            scene.SaveToFile((path + std::string(".scene")).c_str());
+            mScene.SaveToFile((path + std::string(".scene")).c_str());
         }
     }
 
@@ -351,75 +242,73 @@ public:
         std::string path;
         if (OpenFile("scene", path)) {
             path = AbsolutePathToRelative(path);
-            scene = scene.LoadFromFile(path.c_str());
-            redraw = true;
-            loadedNewFile = true;
+            mScene = mScene.LoadFromFile(path.c_str());
+            mRedrawThisFrame = true;
+            mLoadedSceneThisFrame = true;
         }
     }
 
     void TraceVisRay(const Ray& ray, Line3D currentLine, float length, int depth, std::mt19937& rnd) {
         // Don't go on forever!
-        if (depth >= visSettings.maxDepth) {
-            //return Vector3f();
-            //currentLine.end = ray.GetPointAt(10);
-            //currentLine.endColour = currentLine.startColour - Vector3f(255, 0, 0) * 10 / 100;
-            //lines.push_back(currentLine);
-            //currentLine.start = currentLine.end;
-            //currentLine.startColour = currentLine.endColour;
-
+        if (depth >= mRayVisualizationSettings.maxBounceDepth) {
             return;
         }
         depth++;
 
-        if (length > visSettings.maxDistance) return;
+        if (length > mRayVisualizationSettings.maxDistance) return;
 
         RayPayload payload;
-        if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
-            if (payload.object->show == false) return;
+        if (mScene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
+            // Ignore the first object hit, since it is the object casting the light.
+            if (depth == 1) {
+                Ray rayCont = Ray(payload.point, ray.GetDirection());
+                TraceVisRay(rayCont, currentLine, length, depth, rnd);
+                return;
+            }
 
             Ray newRay = Ray(Vector3f(), Vector3f());
             float pdf;
             payload.material->Scatter(ray, newRay, pdf, payload, rnd);
 
-            if (length + payload.t > visSettings.maxDistance) {
-                currentLine.end = ray.GetPointAt(visSettings.maxDistance - length);
-                length = visSettings.maxDistance;
+            if (length + payload.t > mRayVisualizationSettings.maxDistance) {
+                currentLine.end = ray.GetPointAt(mRayVisualizationSettings.maxDistance - length);
+                length = mRayVisualizationSettings.maxDistance;
             }
             else {
                 length += payload.t;
                 currentLine.end = payload.point;
             }
-            currentLine.endAlpha = 1.0- (length / visSettings.maxDistance);
+            currentLine.endAlpha = 1.0- (length / mRayVisualizationSettings.maxDistance);
 
-            lines.push_back(currentLine);
+            mRayVisualizationLines.push_back(currentLine);
             currentLine.start = newRay.GetOrigin();
             currentLine.startAlpha = currentLine.endAlpha;
 
-            if (payload.object->material.emitted != 0) return;
-
+            // Continue recursively.
             TraceVisRay(newRay, currentLine, length, depth, rnd);
         }
         else {
-
-            if (depth > 1) {
-                currentLine.end = ray.GetPointAt(visSettings.maxDistance - length);
-                length = visSettings.maxDistance;
+            // Draw rays which go off into the sky.
+            if (depth > 1 || mRayVisualizationSettings.showAllRays) {
+                if (mRayVisualizationSettings.shortenRays) {
+                    currentLine.end = ray.GetPointAt(mRayVisualizationSettings.shortenedRayLength);
+                    length += mRayVisualizationSettings.shortenedRayLength;
+                }
+                else {
+                    currentLine.end = ray.GetPointAt(mRayVisualizationSettings.maxDistance - length);
+                    length = mRayVisualizationSettings.maxDistance;
+                }
                 currentLine.endAlpha = 0;
 
-                //currentLine.startColour = currentLine.endColour;
-                lines.push_back(currentLine);
+                mRayVisualizationLines.push_back(currentLine);
             }
-
             return;
         }
-        //return { 0, 0, 0 };
         return;
     }
 
-    void GenerateLines() {
-        lines.clear();
-        Vector3f origin = Vector3f(0, 0.375, -2);
-        int divisions = visSettings.initialRays;
+    void GenerateLines(Vector3f origin, Colour colour) {
+        int divisions = mRayVisualizationSettings.initialRays;
         std::vector<Ray> rays;
         Matrix4x4f rotation;
         Vector3f initialDirection = { 0, -1, 0 };
@@ -456,56 +345,28 @@ public:
             Line3D line;
             line.start = origin;
             line.startAlpha = 1;
+            line.colour = colour;
             TraceVisRay(ray, line, 0, 0, rnd);
         }
     }
 
-    bool IsLineVisible(float depth, const Ray& toLine, const Line3D& line) {
-        //Vector3f toLineEnd = toLine.GetPointAt(depth);
-        //float R21 = (toLineEnd - toLine.GetOrigin()).Dot(toLineEnd - toLine.GetOrigin());
-        //float R22 = (line.end - line.start).Dot(line.end - line.start);
-        //float D4321 = (line.end - line.start).Dot(toLineEnd - toLine.GetOrigin());
-        //float D3121 = (line.start - toLine.GetOrigin()).Dot(toLineEnd - toLine.GetOrigin());
-        //float D4331 = (line.end - line.start).Dot(line.start - toLine.GetOrigin());
-        //float D4332 = (line.end - line.start).Dot(line.start - toLineEnd);
-        //float s = (D4321 * D4331 + D3121 * R22) / (R21 * R22 + D4321 * D4321);
-        //float t = (D4321 * D3121 - D3121 * R21) / (R21 * R22 + D4321 * D4321);
-        ////Vector3f closestPointOnLine = line.start + t * (line.end - line.start);
-        //Vector3f closestPointOnLine = toLine.GetOrigin() + s * (toLineEnd - toLine.GetOrigin());
-        //return (closestPointOnLine - scene.camera.position).Magnitude() < depth && s >= 0 && s <= 1;
-        ////return s >= 0 && s <= 1;
-        ////float closestOnLineToDepth = -D4332 / R22;
-        ////Vector3f closestPos = line.start + closestOnLineToDepth * (line.end - line.start);
-        ////return (closestPos - scene.camera.position).Magnitude() < depth;
-
-        Vector3f posDiff = line.start - toLine.GetOrigin();
-        Vector3f crossNormal = toLine.GetDirection().Cross(line.end - line.start);
-        crossNormal.Normalize();
-        Vector3f rejection = posDiff - toLine.GetDirection().Dot(posDiff) * toLine.GetDirection() - crossNormal.Dot(posDiff) * crossNormal;
-        rejection.Normalize();
-        Vector3f closestApproach = line.start - (line.end - line.start) * rejection / (line.end - line.start).Dot(rejection);
-        printf("%f %f\n", (closestApproach - scene.camera.position).Magnitude(), depth);
-        return (closestApproach - scene.camera.position).Magnitude() <= depth;
-
-        //Vector3f d2 = line.end - line.start;
-        //d2.Normalize();
-        //Vector3f n = toLine.GetDirection().Dot(d2);
-        //n.Normalize();
-        //Vector3f n2 = (d2).Cross(n);
-        //n2.Normalize();
-        //Vector3f c1 = toLine.GetOrigin() + ((line.start - toLine.GetOrigin()).Dot(n2) / (toLine.GetDirection().Dot(n2))) * toLine.GetDirection();
-        //return (c1 - scene.camera.position).Magnitude() < depth;
+    void GenerateVisualization() {
+        mRayVisualizationLines.clear();
+        for each (Object* object in mScene.GetLights()) {
+            if (object->show) GenerateLines(object->GetPosition(), object->material.colour);
+        }
     }
 
     void UpdateImGui() {
+        // ImGui stuff (from example)
         ImGui_ImplSDLRenderer_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
+        // Enable docking
         ImGui::DockSpaceOverViewport();
-        ImGui::ShowDemoWindow();
 
-        // Menu bar.
+        // Menu bar
         {
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("File")) {
@@ -525,8 +386,8 @@ public:
                 }
 
                 if (ImGui::BeginMenu("Interface")) {
-                    if (ImGui::Checkbox("Dark Mode", &darkMode)) {
-                        SetImGuiStyle(darkMode);
+                    if (ImGui::Checkbox("Dark Mode", &mDarkMode)) {
+                        SetImGuiStyle(mDarkMode);
                     }
                     ImGui::EndMenu();
                 }
@@ -540,7 +401,7 @@ public:
             ImGui::SetNextWindowBgAlpha(0.9f);
             ImGui::Begin("Overlay", (bool*)1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::Text("Renderer: %.3f ms/frame (%.1f FPS)", rendererFps * 1000, 1000/(rendererFps * 1000));
+            ImGui::Text("Renderer: %.3f ms/frame (%.1f FPS)", mRendererFps * 1000, 1000/(mRendererFps * 1000));
 
             ImGui::End();
         }
@@ -548,119 +409,125 @@ public:
         // Camera position
         {
             ImGui::Begin("Camera");
-            redraw |= ImGui::DragFloat3("Position", (float*)&scene.camera.position, 0.01);
-            //ImGui::DragFloat3("Rotation", (float*)&obj->rotation, 0.5);
+            mRedrawThisFrame |= ImGui::DragFloat3("Position", (float*)&mScene.camera.position, 0.01);
 
             ImGui::End();
         }
 
-        // Object selection window.
+        // Object selection window
         {
             ImGui::Begin("Objects");
             if (ImGui::Button("Add New Object", { ImGui::GetWindowWidth(), 20 })) {
-                //scene.AddObject(GenerateRandomObject());
                 ImGui::OpenPopup("Add Object");
             }
 
-            ImGui::SetNextWindowPos(ImGui::GetWindowPos(), ImGuiCond_Always, ImVec2(1, 0));
-            if (ImGui::BeginPopup("Add Object")) {
+            // New object pop-up
+ImGui::SetNextWindowPos(ImGui::GetWindowPos(), ImGuiCond_Always, ImVec2(1, 0));
+if (ImGui::BeginPopup("Add Object")) {
 
-                char nameBuffer[100];
-                sprintf_s(nameBuffer, newObjectName.c_str(), 100);
-                ImGui::InputText("Name", nameBuffer, 100);
-                newObjectName = nameBuffer;
+    char nameBuffer[100];
+    sprintf_s(nameBuffer, mNewObjectName.c_str(), 100);
+    ImGui::InputText("Name", nameBuffer, 100);
+    mNewObjectName = nameBuffer;
 
-                const char* objectTypes[] = { "Sphere", "Cube", "3D Model" };
-                if (ImGui::BeginCombo("Material Type", objectTypes[newObjectType])) {
-                    for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
-                        const bool selected = (newObjectType == i);
-                        if (ImGui::Selectable(objectTypes[i], selected)) {
-                            newObjectType = i;
-                        }
-
-                        if (selected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-
-                bool valid = true;
-
-                if (objectTypes[newObjectType] == "3D Model") {
-                    char buffer[100];
-                    sprintf_s(buffer, newObjectPath.c_str(), newObjectPath.length());
-                    std::ifstream file(newObjectPath);
-                    valid = file.good();
-                    if (!valid) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-                    ImGui::InputText("File Path", buffer, 100);
-                    if (!valid) ImGui::PopStyleColor();
-                    newObjectPath = buffer;
-
-                    if (ImGui::Button("Browse for file")) {
-                        nfdchar_t* path = NULL;
-                        nfdresult_t result = NFD_OpenDialog("obj", NULL, &path);
-                        newObjectPath = AbsolutePathToRelative(path);
-                    }
-                }
-
-                if (ImGui::Button("Ok") && valid) {
-                    ImGui::CloseCurrentPopup();
-                    Object* object;
-
-                    if (objectTypes[newObjectType] == "Sphere") {
-                        object = (Object*) new Sphere(Vector3f(), 0.5, Material());
-                    }
-                    else if (objectTypes[newObjectType] == "Cube") {
-                        object = (Object*) new Mesh({ 0, 0, 0 }, "Cube.obj", Material());
-                    }
-                    else if (objectTypes[newObjectType] == "3D Model") {
-                        object = (Object*) new Mesh({ 0, 0, 0 }, newObjectPath.c_str(), Material());
-                    }
-
-                    redraw = true;
-                    scene.AddObject(newObjectName.c_str(), object);
-                    selectedObject = scene.GetObjectCount() - 1;
-                    newObjectName = "Object " + std::to_string(scene.GetObjectCount());
-                    newObjectPath = "";
-                    newObjectType = 0;
-                }
-                if (!valid && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
-
-                ImGui::SameLine();
-                if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
-
-                ImGui::EndPopup();
+    const char* objectTypes[] = { "Sphere", "Cube", "3D Model" };
+    if (ImGui::BeginCombo("Material Type", objectTypes[mNewObjectType])) {
+        for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
+            const bool selected = (mNewObjectType == i);
+            if (ImGui::Selectable(objectTypes[i], selected)) {
+                mNewObjectType = i;
             }
 
-            for (int n = 0; n < scene.GetObjectCount(); n++) {
-                ImGui::SetItemAllowOverlap();
+            if (selected)
+                ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+    }
 
-                ImGui::SetCursorPos(ImVec2(8, n * 25 + 20 + 35));
+    bool valid = true;
 
-                char buf[32];
-                sprintf(buf, "##Show %d", n + 1); // Hidden id for the checkbox.
-                Object* obj = scene.GetObjects()[n];
+    if (objectTypes[mNewObjectType] == "3D Model") {
+        char buffer[100];
+        sprintf_s(buffer, mNewObjectPath.c_str(), mNewObjectPath.length());
+        std::ifstream file(mNewObjectPath);
+        valid = file.good();
+        if (!valid) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+        ImGui::InputText("File Path", buffer, 100);
+        if (!valid) ImGui::PopStyleColor();
+        mNewObjectPath = buffer;
 
-                // Checkbox to show and hide object.
-                redraw |= ImGui::Checkbox(buf, &obj->show);
+        if (ImGui::Button("Browse for file")) {
+            nfdchar_t* path = NULL;
+            nfdresult_t result = NFD_OpenDialog("obj", NULL, &path);
+            mNewObjectPath = AbsolutePathToRelative(path);
+        }
+    }
 
-                ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 3 + 35));
-                sprintf(buf, (std::string("##object_id_") + std::to_string(scene.GetObjectID(obj))).c_str(), n + 1);
-                if (ImGui::Selectable(buf, selectedObject == n))
-                    selectedObject = n; // Set currently selected object.
-                ImGui::SameLine();
-                ImGui::Text(obj->name.c_str());
-            }
+    if (ImGui::Button("Ok") && valid) {
+        ImGui::CloseCurrentPopup();
+        Object* object;
 
-            ImGui::End();
+        if (objectTypes[mNewObjectType] == "Sphere") {
+            object = (Object*) new Sphere(Vector3f(), 0.5, Material());
+        }
+        else if (objectTypes[mNewObjectType] == "Cube") {
+            object = (Object*) new Mesh({ 0, 0, 0 }, "Cube.obj", Material());
+        }
+        else if (objectTypes[mNewObjectType] == "3D Model") {
+            object = (Object*) new Mesh({ 0, 0, 0 }, mNewObjectPath.c_str(), Material());
         }
 
-        // Pannel to edit currently selected object.
+        mRedrawThisFrame = true;
+        mScene.AddObject(mNewObjectName.c_str(), object);
+        mSelectedObject = mScene.GetObjectCount() - 1;
+        mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
+        mNewObjectPath = "";
+        mNewObjectType = 0;
+    }
+    if (!valid && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+
+    ImGui::SameLine();
+    if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
+
+    ImGui::EndPopup();
+}
+
+// Add each objects to the list
+for (int n = 0; n < mScene.GetObjectCount(); n++) {
+    ImGui::SetItemAllowOverlap();
+    ImGui::SetCursorPos(ImVec2(8, n * 25 + 20 + 35));
+
+    Object* obj = mScene.GetObjects()[n];
+
+    // Create hidden id for the checkbox.
+    char buf[32];
+
+    // Checkbox to show and hide object.
+    mRedrawThisFrame |= ImGui::Checkbox(buf, &obj->show);
+
+    ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 3 + 35));
+
+    // Create tag for the object (needs an id so that each label is unique)
+    sprintf(buf, (std::string("##object_id_") + std::to_string(mScene.GetObjectID(obj))).c_str(), n + 1);
+
+    // Set currently selected object.
+    if (ImGui::Selectable(buf, mSelectedObject == n)) mSelectedObject = n;
+
+    // Draw label
+    ImGui::SameLine();
+    ImGui::Text(obj->name.c_str());
+}
+
+ImGui::End();
+        }
+
+        // Current object properties
         {
             ImGui::Begin("Object Properties");
 
-            if (selectedObject >= 0) {
-                Object* obj = scene.GetObjects()[selectedObject];
+            // Make sure an object is selected
+            if (mSelectedObject >= 0) {
+                Object* obj = mScene.GetObjects()[mSelectedObject];
 
                 char buffer[32];
                 sprintf_s(buffer, obj->name.c_str(), obj->name.length());
@@ -672,13 +539,12 @@ public:
                 Vector3f scale = obj->GetScale();
 
                 if (ImGui::DragFloat3("Position", (float*)&position, 0.01)) {
-                    redraw = true;
+                    mRedrawThisFrame = true;
                     obj->SetPosition(position);
                 }
 
                 if (ImGui::DragFloat3("Rotation", (float*)&rotation, 1)) {
-                    redraw = true;
-                    // TODO: Check!
+                    mRedrawThisFrame = true;
                     rotation.x = fmod(rotation.x, 360);
                     rotation.y = fmod(rotation.y, 360);
                     rotation.z = fmod(rotation.z, 360);
@@ -686,16 +552,16 @@ public:
                 }
 
                 if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01)) {
-                    redraw = true;
+                    mRedrawThisFrame = true;
                     obj->SetScale(scale);
                 }
 
                 obj->name = std::string(buffer);
 
                 if (ImGui::Button("Delete")) {
-                    scene.RemoveObject(obj);
-                    selectedObject--;
-                    redraw = true;
+                    mScene.RemoveObject(obj);
+                    mSelectedObject--;
+                    mRedrawThisFrame = true;
                 }
             }
             else {
@@ -704,36 +570,37 @@ public:
             ImGui::End();
         }
 
-        // Pannel to edit the material of the currently selected object.
+        // Object material properties
         {
             ImGui::Begin("Material Editor");
 
-            if (selectedObject >= 0) {
-                Object* obj = scene.GetObjects()[selectedObject];
+            // Make sure an object is selected
+            if (mSelectedObject >= 0) {
+                Object* obj = mScene.GetObjects()[mSelectedObject];
                 Material* material = &obj->material;
 
                 const char* materials[] = { "Lambertian", "Specular", "Glass" };
-
-                const char* comboText = materials[(int)material->materialType];  // Pass in the preview value visible before opening the combo (it could be anything)
+                // Pass in the preview value visible before opening the combo (it could be anything)
+                const char* comboText = materials[(int)material->materialType]; 
                 if (ImGui::BeginCombo("Material Type", comboText)) {
                     for (int i = 0; i < IM_ARRAYSIZE(materials); i++) {
-                        const bool selected = ((int)material->materialType == i);
+                        bool selected = ((int)material->materialType == i);
                         if (ImGui::Selectable(materials[i], selected)) {
+                            // Change material type
                             material->materialType = (MaterialType)i;
-                            redraw = true;
+                            mRedrawThisFrame = true;
                         }
 
-                        if (selected)
-                            ImGui::SetItemDefaultFocus();
+                        if (selected) ImGui::SetItemDefaultFocus();
                     }
                     ImGui::EndCombo();
                 }
 
-                redraw |= ImGui::ColorEdit3("Colour", (float*)&material->colour);
-                if (material->materialType != MaterialType::Glass) redraw |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.1, 0, 100);
-                //if (material->type != MaterialType::Glass) ImGui::SliderFloat("Albedo", &material->albedo, 0, 1);
-                if (material->materialType == MaterialType::Glass) redraw |= ImGui::SliderFloat("Index of Refraction", &material->refractiveIndex, 1, 2);
-                if (material->materialType != MaterialType::Lambertian) redraw |= ImGui::SliderFloat("Roughness", &material->roughness, 0, 1000);
+                mRedrawThisFrame |= ImGui::ColorEdit3("Colour", (float*)&material->colour);
+                if (material->materialType != MaterialType::Glass) mRedrawThisFrame |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.1, 0, 100);
+                // TODO: albedo
+                if (material->materialType == MaterialType::Glass) mRedrawThisFrame |= ImGui::SliderFloat("Index of Refraction", &material->refractiveIndex, 1, 2);
+                if (material->materialType != MaterialType::Lambertian) mRedrawThisFrame |= ImGui::SliderFloat("Roughness", &material->roughness, 0, 1000);
             }
             else {
                 ImGui::Text("Select an object to edit it's material.");
@@ -741,41 +608,25 @@ public:
             ImGui::End();
         }
 
-        // Pannel to set the renderer configuration.
+        // Render settings
         {
             ImGui::Begin("Render Settings");
             if (ImGui::BeginTabBar("Render Settings Tab Bar")) {
                 if (ImGui::BeginTabItem("Preview")) {
-                    redraw |= ImGui::SliderInt("Max Depth", &renderSettings.maxDepth, 1, 100);
-                    redraw |= ImGui::SliderInt("Samples Per Frame", &renderSettings.samples, 1, 100);
-                    redraw |= ImGui::ColorEdit3("Ambient Light Colour", (float*)&renderSettings.ambientLight);
-                    redraw |= ImGui::Checkbox("Checkerboard", &renderSettings.checkerboard);
-                    redraw |= ImGui::Checkbox("Explicit Light Sampling", &renderSettings.directLightSampling);
+                    mRedrawThisFrame |= ImGui::SliderInt("Max Depth", &mPreviewRenderSettings.maxDepth, 1, 100);
+                    mRedrawThisFrame |= ImGui::SliderInt("Samples Per Frame", &mPreviewRenderSettings.samples, 1, 100);
+                    mRedrawThisFrame |= ImGui::ColorEdit3("Ambient Light Colour", (float*)&mPreviewRenderSettings.ambientLight);
+                    mRedrawThisFrame |= ImGui::Checkbox("Checkerboard", &mPreviewRenderSettings.checkerboard);
+                    mRedrawThisFrame |= ImGui::Checkbox("Explicit Light Sampling", &mPreviewRenderSettings.directLightSampling);
                     ImGui::EndTabItem();
                 }
-                //if (ImGui::BeginTabItem("Output")) {
-                //    ImGui::SliderInt("Max Depth", &outputSettings.depth, 1, 100);
-                //    ImGui::SliderInt("Samples Per Frame", &outputSettings.samples, 1, 100);
-                //    ImGui::ColorEdit3("Ambient Light Colour", (float*)&outputSettings.ambient);
-                //    ImGui::EndTabItem();
-                //}
                 ImGui::EndTabBar();
             }
 
             ImGui::End();
         }
 
-        //// Pannel to control the ray visualisation overlay.
-        //{
-        //    ImGui::Begin("Ray Illustration");
-        //    ImGui::Checkbox("Enable", &enableRayLines);
-        //    ImGui::SliderInt("Bounces per line", &rayLineDepth, 1, 10);
-        //    ImGui::SliderInt("Lines per light source", &rayLinesPerLightSource, 1, 10);
-        //    ImGui::ColorEdit3("Ray Line Colour", (float*)&rayLineColour);
-        //    ImGui::End();
-        //}
-
-        // The window which contains the renderer output.
+        // Viewport
         {
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
             ImGui::Begin("Scene");
@@ -784,75 +635,84 @@ public:
             ImGui::SetItemAllowOverlap();
 
             SDL_Point size;
-            SDL_QueryTexture(finalImage->GetRawTexture(), NULL, NULL, &size.x, &size.y);
+            SDL_QueryTexture(mOutputTexture->GetRawTexture(), NULL, NULL, &size.x, &size.y);
 
+            // Scale texture to fit in viewport
             float scale = (ImGui::GetWindowWidth()) / size.x;
             if (scale * size.y > ImGui::GetWindowHeight()) scale = (ImGui::GetWindowHeight()) / size.y;
-            //scale = 1;
-            //ImGui::SetCursorPos({ 0, 25 });
-            ImVec2 imageStartScreen = ImGui::GetCursorScreenPos();
-            //ImGui::GetWindowDrawList()->AddImage(
-            //    (void*)finalImage->GetRawTexture(),
-            //    ImVec2(ImGui::GetCursorScreenPos()),
-            //    ImVec2((int)(ImGui::GetCursorScreenPos().x + size.x * scale), (int)(ImGui::GetCursorScreenPos().y + size.y * scale)));
-            ImGui::Image((void*)(intptr_t)finalImage2, ImVec2(size.x * scale, size.y * scale));
 
-            if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && ImGui::IsMouseHoveringRect(imageStartScreen, { imageStartScreen.x + size.x * scale, imageStartScreen.y + size.y * scale })) {
+            // Get position of top left corner of image
+            ImVec2 textureTopLeftInWindow = ImGui::GetCursorScreenPos();
+
+            // Add the texture
+            ImGui::Image((void*)(intptr_t)mOutputTexture->GetRawTexture(), ImVec2(size.x * scale, size.y * scale));
+
+            // The image is clicked
+            if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && ImGui::IsMouseHoveringRect(textureTopLeftInWindow, { textureTopLeftInWindow.x + size.x * scale, textureTopLeftInWindow.y + size.y * scale })) {
+                // Work out which object is being clicked and select it
                 ImVec2 pos = ImGui::GetMousePos();
-                Vector2f relativePos = { (pos.x - imageStartScreen.x) / (scale * size.x), (pos.y - imageStartScreen.y) / (scale * size.y) };
-                Vector3f viewportPos = scene.camera.GetViewportPos(relativePos);
-                Ray ray = Ray(scene.camera.position, viewportPos);
+                Vector2f relativePos = { (pos.x - textureTopLeftInWindow.x) / (scale * size.x), (pos.y - textureTopLeftInWindow.y) / (scale * size.y) };
+                Vector3f viewportPos = mScene.camera.GetViewportPos(relativePos);
+                Ray ray = Ray(mScene.camera.position, viewportPos);
                 RayPayload payload;
-                if (scene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
-                    selectedObject = scene.GetObjectID(payload.object);
+                if (mScene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
+                    mSelectedObject = mScene.GetObjectID(payload.object);
                 }
                 else {
-                    selectedObject = -1;
+                    // De-select
+                    mSelectedObject = -1;
                 }
             }
-            //std::cout << ImGui::GetWindowWidth() << " " << std::round(size.x * scale) << std::endl;
-            //if (std::round(size.y * scale) != ImGui::GetWindowHeight() || std::round(size.x * scale) != 1631) {
-            //    float aspectRatio = ImGui::GetWindowWidth() / ImGui::GetWindowHeight();
-            //    width = height * aspectRatio;
-            //    renderSettings.resolution = { (float)width, (float)height };
-
-            //    image = new Colour * [width];
-            //    isSelectedObjectVisible = new bool* [width];
-            //    for (int i = 0; i < width; i++) {
-            //        image[i] = new Colour[height];
-            //        isSelectedObjectVisible[i] = new bool[height];
-            //    }
-
-            //    finalImage = new Texture(width, height);
-            //    finalImage2 = SDL_CreateTexture(Application::GetApp()->GetRenderer()->GetRawRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
-
-            //    SDL_SetTextureScaleMode(finalImage2, SDL_ScaleModeBest);
-
-            //    scene.camera = Camera(aspectRatio, 2, scene.camera.position);
-            //}
 
             ImGui::End();
             ImGui::PopStyleVar();
         }
 
+        // Ray visualization
         {
             ImGui::Begin("Ray Visualization");
-            ImGui::Checkbox("Show visualization", &showVisualizualisation);
-            ImGui::DragInt("Initial rays cast", &visSettings.initialRays, 1, 0, 100);
-            ImGui::DragInt("Max depth", &visSettings.maxDepth, 1, 0, 100);
-            ImGui::DragFloat("Max distance", &visSettings.maxDistance, 0.01, 0.01, 10);
-            ImGui::ColorEdit3("Colour", (float*)&visSettings.lineColour);
-            if (ImGui::Button("Generate Rays")) GenerateLines();
+            ImGui::Checkbox("Show visualization", &mRayVisualizationSettings.enable);
+            ImGui::Checkbox("Show all rays", &mRayVisualizationSettings.showAllRays);
+
+            ImGui::Checkbox("Shorten infinite rays", &mRayVisualizationSettings.shortenRays);
+            ImGui::SameLine();
+            ImGui::SetCursorPos(ImVec2(160, ImGui::GetCursorPosY()));
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
+            ImGui::DragFloat("Shortened ray length", &mRayVisualizationSettings.shortenedRayLength, 0.01, 0.01, mRayVisualizationSettings.maxDistance);
+            ImGui::PopItemWidth();
+
+            ImGui::Checkbox("Update regularly", &mRayVisualizationSettings.updateRegularly);
+            ImGui::SameLine();
+            ImGui::SetCursorPos(ImVec2(160, ImGui::GetCursorPosY()));
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
+            ImGui::DragInt("Update Frames", &mRayVisualizationSettings.framesPerUpdate, 1, 1, 10);
+            ImGui::PopItemWidth();
+
+            ImGui::DragInt("Initial rays cast", &mRayVisualizationSettings.initialRays, 1, 0, 100);
+            ImGui::DragInt("Max depth", &mRayVisualizationSettings.maxBounceDepth, 1, 0, 100);
+            ImGui::DragFloat("Max distance", &mRayVisualizationSettings.maxDistance, 0.01, 0.01, 10);
+
+            ImGui::Checkbox("Same colour", &mRayVisualizationSettings.sameColour);
+            ImGui::SameLine();
+            ImGui::SetCursorPos(ImVec2(160, ImGui::GetCursorPosY()));
+            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
+            ImGui::ColorEdit3("Colour", (float*)&mRayVisualizationSettings.lineColour);
+            ImGui::PopItemWidth();
+
+            if (ImGui::Button("Generate Rays")) GenerateVisualization();
             ImGui::End();
         }
 
+        // Draw to the screen
         ImGui::Render();
         ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
-
     }
 
-    void DrawBresenhamLine(Texture* image, Line2D line, Line3D line3d) {
+    void DrawRay(Texture* image, Line2D line, Line3D line3d) {
+        // Use the Bresenham algorthithm to draw the ray onto the screen.
+
         image->Lock();
+
         float m = (line.end.y - line.start.y) / (line.end.x - line.start.x);
         float c = line.start.y - m * line.start.x;
         int xDirection = line.start.x < line.end.x ? 1 : -1;
@@ -870,21 +730,31 @@ public:
                 actualY = m * xCoord + c;
                 float d1 = abs(actualY - yCoord);
                 float d2 = abs(yCoord + yDirection - actualY);
-                if (d1 - d2 > 0)
-                    yCoord += yDirection;
+                if (d1 - d2 > 0) yCoord += yDirection;
 
                 if (alpha < 0) alpha = 0;
                 if (alpha > 1) alpha = 1;
 
+                // Make sure the line is between the start and end points.
                 if (xCoord >= 0 && xCoord < image->GetWidth() && yCoord >= 0 && yCoord < image->GetHeight()) {
-                    Vector3f toLine = scene.camera.GetViewportPos({ (float)xCoord, (float)yCoord });
+
+                    // Get the position of the line through that pixel.
+                    Vector3f toLine = mScene.camera.GetViewportPos({ (float)xCoord, (float)yCoord });
                     toLine.Normalize();
-                    if (IsLineVisible(depthMap[xCoord][yCoord], Ray(scene.camera.position, toLine), line3d)) {
-                        colour = line.colour * 255 * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) * (1 - alpha);
+                    float t = (Vector2f((float)xCoord, (float)yCoord) - line.start).Magnitude() / (line.end - line.start).Magnitude();
+                    Vector3f pos = line3d.start + t * (line3d.end - line3d.start);
+
+                    // Only draw if the line is in front of every other object.
+                    if ((pos - mScene.camera.position).Magnitude() < mDepthBufferOld[xCoord][yCoord] || mDepthBufferOld[xCoord][yCoord] < 0) {
+                        // Alpha blend between the line colour and the image colour.
+                        colour = line.colour * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) / 255 * (1 - alpha);
+                        // Multiply by the image colour if the object is glass.
+                        if (mDepthBufferOld[xCoord][yCoord] < 0 && (pos - mScene.camera.position).Magnitude() > abs(mDepthBufferOld[xCoord][yCoord]))
+                            colour = colour * image->GetColourAt({ (float)xCoord, (float)yCoord }) / 255;
+                        colour *= 255;
                         image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
                     }
                 }
-
                 alpha += alphaDiff;
             }
         }
@@ -903,76 +773,60 @@ public:
 
 
                 if (xCoord >= 0 && xCoord < image->GetWidth() && yCoord >= 0 && yCoord < image->GetHeight()) {
-                    Vector3f toLine = scene.camera.GetViewportPos({ (float)xCoord, (float)yCoord });
+                    Vector3f toLine = mScene.camera.GetViewportPos({ (float)xCoord, (float)yCoord });
                     toLine.Normalize();
-                    if (IsLineVisible(depthMap[xCoord][yCoord], Ray(scene.camera.position, toLine), line3d)) {
-                        colour = line.colour * 255 * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) * (1 - alpha);
+
+                    float t = (Vector2f((float)xCoord, (float)yCoord) - line.start).Magnitude() / (line.end - line.start).Magnitude();
+                    Vector3f pos = line3d.start + t * (line3d.end - line3d.start);
+
+                    if ((pos - mScene.camera.position).Magnitude() < mDepthBufferOld[xCoord][yCoord] || mDepthBufferOld[xCoord][yCoord] < 0) {
+                        colour = line.colour * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) / 255 * (1 - alpha);
+                        if (mDepthBufferOld[xCoord][yCoord] < 0 && (pos - mScene.camera.position).Magnitude() > abs(mDepthBufferOld[xCoord][yCoord]))
+                            colour = colour * image->GetColourAt({ (float)xCoord, (float)yCoord }) / 255;
+                        colour *= 255;
                         image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
                     }
                 }
-
                 alpha += alphaDiff;
             }
         }
-
         image->Unlock();
     }
 
-    void Update(float deltaTime) {
-        std::string title = "Ray Tracing Optics Simulator: ";
-        if (scene.GetName() != "") title += scene.GetName();
-        else title += "unnamed";
-        if (scene.IsModified()) title += "*";
-        GetWindow()->SetTitle(title.c_str());
-
-        if (redraw && !loadedNewFile) scene.SetModified();
-        loadedNewFile = false;
-
-        // Start rendering again from scratch if settings are changed.
-        if (redraw) frame = 1;
-        redraw = false;
-        frame++;
-
-        std::chrono::system_clock::time_point previousTime = std::chrono::system_clock::now();
-        image = GetRenderer()->RenderScene(scene, image, depthMap, renderSettings, frame);
-        std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
-        std::chrono::duration<float> elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(currentTime - previousTime);
-        rendererFps = elapsed.count();
-
-        for (int y = 0; y < renderSettings.resolution.y; y++) {
-            for (int x = 0; x < renderSettings.resolution.x; x++) {
-                if (selectedObject >= 0) {
-                    Vector2f screenPos = { x / renderSettings.resolution.x, y / renderSettings.resolution.y };
-                    Vector3f viewportPos = scene.camera.GetViewportPos(screenPos);
-                    Ray ray = Ray(scene.camera.position, viewportPos);
-                    Object* selected = scene.GetObjects()[selectedObject];
+    void CalculateObjectVisability() {
+        // Check which pixels contain the selected object.
+        for (int y = 0; y < mPreviewRenderSettings.resolution.y; y++) {
+            for (int x = 0; x < mPreviewRenderSettings.resolution.x; x++) {
+                // If an object is selected.
+                if (mSelectedObject >= 0) {
+                    Vector2f screenPos = { x / mPreviewRenderSettings.resolution.x, y / mPreviewRenderSettings.resolution.y };
+                    Vector3f viewportPos = mScene.camera.GetViewportPos(screenPos);
+                    Ray ray = Ray(mScene.camera.position, viewportPos);
+                    Object* selected = mScene.GetObjects()[mSelectedObject];
                     RayPayload payload;
-                    isSelectedObjectVisible[x][y] = selected->Intersect(ray, 0, FLT_MAX, payload);
+                    mIsSelectedObjectVisible[x][y] = selected->Intersect(ray, 0, FLT_MAX, payload);
                 }
                 else {
-                    isSelectedObjectVisible[x][y] = false;
+                    mIsSelectedObjectVisible[x][y] = false;
                 }
             }
         }
+    }
 
-        //Line3D line3d = { Vector3f(-0.2, 0, 0.36), Vector3f(0.43, 0.23, -0.25) };
-        //Line2D line;
-        //line.start = scene.camera.GetScreenPos(line3d.start) * renderSettings.resolution;
-        //line.end = scene.camera.GetScreenPos(line3d.end) * renderSettings.resolution;
-
-       // Prepare image texture for rendering.
-        finalImage->Lock();
-        for (int y = 0; y < renderSettings.resolution.y; y++) {
-            for (int x = 0; x < renderSettings.resolution.x; x++) {
+    void ConvertRenderedImageToTexture(Colour** image, Texture* texture) {
+        texture->Lock();
+        for (int y = 0; y < mPreviewRenderSettings.resolution.y; y++) {
+            for (int x = 0; x < mPreviewRenderSettings.resolution.x; x++) {
                 Colour colour = Vector3f();
 
-                if (renderSettings.checkerboard && !((x % 2 == 0 && y % 2 == 0) || (x % 2 != 0 && y % 2 != 0))) {
+                // If checkerboard rendering is enabled, fill in the empty squares.
+                if (mPreviewRenderSettings.checkerboard && !((x % 2 == 0 && y % 2 == 0) || (x % 2 != 0 && y % 2 != 0))) {
                     int samples = 0;
                     if (x - 1 >= 0) {
                         colour += image[x - 1][y];
                         samples++;
                     }
-                    if (x + 1 < renderSettings.resolution.x) {
+                    if (x + 1 < mPreviewRenderSettings.resolution.x) {
                         colour += image[x + 1][y];
                         samples++;
                     }
@@ -980,7 +834,7 @@ public:
                         colour += image[x][y - 1];
                         samples++;
                     }
-                    if (y + 1 < renderSettings.resolution.y) {
+                    if (y + 1 < mPreviewRenderSettings.resolution.y) {
                         colour += image[x][y + 1];
                         samples++;
                     }
@@ -991,33 +845,24 @@ public:
                     colour = image[x][y];
                 }
 
-                finalImage->SetColourAt({ (float)x, (float)y }, colour * 255);
+                // Set texture pixel.
+                texture->SetColourAt({ (float)x, (float)y }, colour * 255);
             }
         }
+        texture->Unlock();
+    }
 
-
-        for (int y = 0; y < renderSettings.resolution.y; y++) {
-            for (int x = 0; x < renderSettings.resolution.x; x++) {
-
-                //Vector2f lineDirection = line.end - line.start;
-                //Vector2f toPixel = Vector2f(x, y) - line.start;
-                //lineDirection.Normalize();
-                //toPixel.Normalize();
-                //if (toPixel.Dot(lineDirection) > 0.99999) finalImage->SetColourAt({ (float)x, (float)y }, { 255, 0, 100 });
-
-                //for each (Line2D line in lines2d) {
-                //    float grad = (line.end.y - line.start.y) / (line.end.x - line.start.x);
-                //    if (abs(y - line.start.y - grad * (x - line.start.x)) < 1)
-                //        //if (x >= line.start.x && x <= line.end.x && y >= line.start.y && y <= line.end.x)
-                //        finalImage->SetColourAt({ (float)x, (float)y }, line.startColour);
-                //}
-
-                if (isSelectedObjectVisible[x][y]) {
+    void DrawSelectedObjectOutline(Texture* texture) {
+        texture->Lock();
+        for (int y = 0; y < mPreviewRenderSettings.resolution.y; y++) {
+            for (int x = 0; x < mPreviewRenderSettings.resolution.x; x++) {
+                // If the pixel contains the selected object, fill all surrounding pixels that don't contain the selected object.
+                if (mIsSelectedObjectVisible[x][y]) {
                     for (int xOffset = x - 1; xOffset <= x + 1; xOffset++) {
                         for (int yOffset = y - 1; yOffset <= y + 1; yOffset++) {
-                            if (xOffset >= 0 && xOffset < renderSettings.resolution.x && yOffset >= 0 && yOffset < renderSettings.resolution.y) {
-                                if (!isSelectedObjectVisible[xOffset][yOffset]) {
-                                    finalImage->SetColourAt({ (float)xOffset, (float)yOffset }, { 0, 0, 0 });
+                            if (xOffset >= 0 && xOffset < mPreviewRenderSettings.resolution.x && yOffset >= 0 && yOffset < mPreviewRenderSettings.resolution.y) {
+                                if (!mIsSelectedObjectVisible[xOffset][yOffset]) {
+                                    texture->SetColourAt({ (float)xOffset, (float)yOffset }, { 0, 0, 0 });
                                 }
                             }
                         }
@@ -1025,39 +870,11 @@ public:
                 }
             }
         }
-        finalImage->Unlock();
+        texture->Unlock();
+    }
 
-        //GenerateLines();
-        if (showVisualizualisation) {
-            for each (Line3D line in lines) {
-                if ((line.start - scene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0 || (line.end - scene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0) continue;
-                Line2D line2d = { scene.camera.GetScreenPos(line.start) * renderSettings.resolution, scene.camera.GetScreenPos(line.end) * renderSettings.resolution, visSettings.lineColour, line.startAlpha, line.endAlpha };
-                line2d.start.x = (int)line2d.start.x;
-                line2d.start.y = (int)line2d.start.y;
-                line2d.end.x = (int)line2d.end.x;
-                line2d.end.y = (int)line2d.end.y;
-                DrawBresenhamLine(finalImage, line2d, line);
-            }
-        }
-
-        //DrawBresenhamLine(finalImage, { Vector2f(10, 200), Vector2f(300, 10), {0, 255, 0}, 0, 1 });
-
-        SDL_SetRenderTarget(GetRenderer()->GetRawRenderer(), finalImage2);
-        SDL_RenderCopy(GetRenderer()->GetRawRenderer(), finalImage->GetRawTexture(), NULL, NULL);
-        //SDL_RenderDrawLine(GetRenderer()->GetRawRenderer(), line.start.x, line.start.y, line.end.x, line.end.y);
-
-        //if (showVisualizualisation) {
-        //    for each (Line2D line in lines2d) {
-        //        SDL_SetRenderDrawColor(GetRenderer()->GetRawRenderer(), visSettings.lineColour.x * 255, visSettings.lineColour.y * 255, visSettings.lineColour.z * 255, line.endAlpha * 255);
-        //        SDL_RenderDrawLine(GetRenderer()->GetRawRenderer(), line.start.x, line.start.y, line.end.x, line.end.y);
-        //    }
-        //}
-                //SDL_SetRenderDrawColor(GetRenderer()->GetRawRenderer(), 255, 255, 0, 155);
-                //SDL_RenderDrawLine(GetRenderer()->GetRawRenderer(), 10, 200, 200, 10);
-
-        SDL_SetRenderTarget(GetRenderer()->GetRawRenderer(), NULL);
-
-        // Process input for ImGui.
+    void GetUserInput() {
+        // Process input for ImGui (from ImGui example).
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
@@ -1069,6 +886,7 @@ public:
             }
         }
 
+        // Keyboard shortcuts.
         const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
         if (keyboardState[SDL_SCANCODE_LCTRL] && keyboardState[SDL_SCANCODE_LSHIFT] && keyboardState[SDL_SCANCODE_S]) {
             SaveSceneAs();
@@ -1082,6 +900,78 @@ public:
         else if (keyboardState[SDL_SCANCODE_LCTRL] && keyboardState[SDL_SCANCODE_N]) {
             New();
         }
+    }
+
+    void DrawRayVisualization() {
+        for each (Line3D line in mRayVisualizationLines) {
+            // Make sure line is visible.
+            if ((line.start - mScene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0 || (line.end - mScene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0) continue;
+
+            // Calculate 2d line position.
+            Line2D line2d = { mScene.camera.GetScreenPos(line.start) * mPreviewRenderSettings.resolution, mScene.camera.GetScreenPos(line.end) * mPreviewRenderSettings.resolution, line.colour, line.startAlpha, line.endAlpha };
+            if (mRayVisualizationSettings.sameColour) line2d.colour = mRayVisualizationSettings.lineColour;
+
+            // Line must start and end exactly on the pixel.
+            line2d.start.x = (int)line2d.start.x;
+            line2d.start.y = (int)line2d.start.y;
+            line2d.end.x = (int)line2d.end.x;
+            line2d.end.y = (int)line2d.end.y;
+
+            DrawRay(mOutputTexture, line2d, line);
+        }
+    }
+
+    void Update(float deltaTime) {
+        // Update the window title to show the name of the scene
+        std::string title = "Ray Tracing Optics Simulator: ";
+        if (mScene.GetName() != "") title += mScene.GetName();
+        else title += "unnamed";
+        // Add a * if the file has unsaved changes.
+        if (mScene.IsModified()) title += "*";
+        GetWindow()->SetTitle(title.c_str());
+
+        mFrame++;
+
+        // Update the visualization.
+        if (mFrame % mRayVisualizationSettings.framesPerUpdate == 0 && mRayVisualizationSettings.updateRegularly) GenerateVisualization();
+
+        // Set the scene as modified if changes were made.
+        if (mRedrawThisFrame && !mLoadedSceneThisFrame) mScene.SetModified();
+
+        // Start rendering again from scratch if settings are changed.
+        if (mRedrawThisFrame) mFrame = 1;
+
+        // Swap round the depth buffers, so that it doesn't make the ray visualization lines flicker.
+        if (mRedrawThisFrame) {
+            float** temp = mDepthBuffer;
+            mDepthBuffer = mDepthBufferOld;
+            mDepthBufferOld = temp;
+        }
+
+        // Render the image and calculate the time takes.
+        std::chrono::system_clock::time_point previousTime = std::chrono::system_clock::now();
+        mRenderedImage = GetRenderer()->RenderScene(mScene, mRenderedImage, mDepthBuffer, mPreviewRenderSettings, mFrame);
+        std::chrono::system_clock::time_point currentTime = std::chrono::system_clock::now();
+        std::chrono::duration<float> elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(currentTime - previousTime);
+        mRendererFps = elapsed.count();
+
+        // Swap depth buffers back round.
+        if (mRedrawThisFrame || mLoadedSceneThisFrame) {
+            float** temp = mDepthBuffer;
+            mDepthBuffer = mDepthBufferOld;
+            mDepthBufferOld = temp;
+        }
+
+        mRedrawThisFrame = false;
+        mLoadedSceneThisFrame = false;
+
+        CalculateObjectVisability();
+
+        ConvertRenderedImageToTexture(mRenderedImage, mOutputTexture);
+        if (mRayVisualizationSettings.enable) DrawRayVisualization();
+        DrawSelectedObjectOutline(mOutputTexture);
+
+        GetUserInput();
 
         // Draw the interface.
         GetRenderer()->Clear();
@@ -1089,45 +979,40 @@ public:
     }
 
 private:
-    Colour** image;       // The image generated by the renderer.
-    bool** isSelectedObjectVisible;
-    float** depthMap;
-    Texture* finalImage;  // The image which will be drawn.
-    SDL_Texture* finalImage2;  // The image which will be drawn.
+    Scene      mScene;
 
-    RenderSettings renderSettings;
+    bool       mDarkMode;
 
-    Scene scene;
+    int        mInternalWidth;
+    int        mInternalHeight;
+    float      mAspectRatio;
 
-    int width;
-    int height;
-    float aspectRatio;
+    int        mFrame = 0;
+    float      mRendererFps;
 
-    int frame = 0;        // Frame referes to the number of frames that nothing has changed, used for temporal anti-aliasing.
+    bool       mRedrawThisFrame;
+    bool       mLoadedSceneThisFrame;
 
-    // UI state:
-    std::string newObjectName;
-    int newObjectType;
-    std::string newObjectPath;
-    int selectedObject;
+    Colour**   mRenderedImage;
+    Texture*   mOutputTexture;
 
-    bool redraw;
-    bool loadedNewFile;
-    ImVec4 ambientLightColour;
+    bool**     mIsSelectedObjectVisible;
+    float**    mDepthBuffer;
+    float**    mDepthBufferOld;
 
-    std::vector<Line3D> lines;
-    RayVisualizationSettings visSettings;
+    RenderSettings mPreviewRenderSettings;
 
-    float rendererFps;
+    std::string   mNewObjectName; // Data for creating a new object.
+    int           mNewObjectType;
+    std::string   mNewObjectPath;
+    int           mSelectedObject;
 
-    bool darkMode;
-    bool showVisualizualisation;
+    RayVisualizationSettings  mRayVisualizationSettings;
+    std::vector<Line3D>       mRayVisualizationLines;
 };
 
 int main(int argc, char* argv[]) {
-
-    Application* app = new PrototypeApp(argv[1]);
+    Application* app = new FinalApp(argv[1]);
     app->Run();
-
     return 0;
 }

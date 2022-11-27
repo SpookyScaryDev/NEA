@@ -113,6 +113,7 @@ IF EXIST Data\*.*\ (xcopy /Q /E /Y /I Data\*.* Binaries\Release-windows-x86_64 &
     <ClInclude Include="Source\Maths\Vector2f.h" />
     <ClInclude Include="Source\Maths\Vector3f.h" />
     <ClInclude Include="Source\Renderer\Camera.h" />
+    <ClInclude Include="Source\Renderer\Line.h" />
     <ClInclude Include="Source\Renderer\Material.h" />
     <ClInclude Include="Source\Renderer\Mesh.h" />
     <ClInclude Include="Source\Renderer\Object.h" />

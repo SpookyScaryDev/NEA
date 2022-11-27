@@ -129,15 +129,12 @@ float Material::GetPDF(const Vector3f& direction, const RayPayload& payload) {
     switch (materialType) {
 
     case MaterialType::Lambertian: {
-        //float a = direction.z - normal.z;
-        //return fabs(a / M_PI);
         float z = normal.Dot(direction);
-        return z / M_PI; // TODO: Check this!!
+        return z / M_PI;
     }
 
     //case MaterialType::Glossy: {
-    //    float cosTheta = direction.x / normal.z;
-    //    return ((1000 - roughness + 1) / 2 * M_PI) * cosTheta;
+        // TODO
     //}
 
     default: return 0;
@@ -175,35 +172,6 @@ float Material::RSchlick2(Vector3f i, Vector3f n, float ir1, float ir2) {
         return 1;
     }
 
-    //float cosine = fmin((-1 * i).Dot(n), 1.0);
-    //float ref_idx = ir1 / ir2;
-
-    //auto r0 = (1 - ref_idx) / (1 + ref_idx);
-    //r0 = r0 * r0;
-    //return r0 + (1 - r0) * pow((1 - cosine), 5);
-
 }
-
-//Vector3f Material::RandomInUnitSphere(std::mt19937& rnd) {
-//    std::uniform_real_distribution<float> dist(0.0, 1.0);
-//
-//    Vector3f direction;
-//    do {
-//        // Generate a random position in the unit cube centered about (0, 0, 0).
-//        direction.x = dist(rnd) - 0.5;
-//        direction.y = dist(rnd) - 0.5;
-//        direction.z = dist(rnd) - 0.5;
-//    }
-//    // Reject if the length is greater than 1 (not in the unit sphere).
-//    while (direction.Magnitude() > 1);
-//    return direction;
-//}
-//
-//Vector3f Material::RandomInUnitHemisphere(Vector3f normal, std::mt19937& rnd) {
-//    Vector3f direction = RandomInUnitSphere(rnd);
-//    // If not in the hemisphere, flip.
-//    if (direction.Dot(normal) < 0) direction = direction * -1;
-//    return direction;
-//}
 
 }
