@@ -422,103 +422,106 @@ public:
             }
 
             // New object pop-up
-ImGui::SetNextWindowPos(ImGui::GetWindowPos(), ImGuiCond_Always, ImVec2(1, 0));
-if (ImGui::BeginPopup("Add Object")) {
+            ImGui::SetNextWindowPos(ImGui::GetWindowPos(), ImGuiCond_Always, ImVec2(1, 0));
+            if (ImGui::BeginPopup("Add Object")) {
 
-    char nameBuffer[100];
-    sprintf_s(nameBuffer, mNewObjectName.c_str(), 100);
-    ImGui::InputText("Name", nameBuffer, 100);
-    mNewObjectName = nameBuffer;
+                char nameBuffer[100];
+                sprintf_s(nameBuffer, mNewObjectName.c_str(), 100);
+                ImGui::InputText("Name", nameBuffer, 100);
+                mNewObjectName = nameBuffer;
 
-    const char* objectTypes[] = { "Sphere", "Cube", "3D Model" };
-    if (ImGui::BeginCombo("Material Type", objectTypes[mNewObjectType])) {
-        for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
-            const bool selected = (mNewObjectType == i);
-            if (ImGui::Selectable(objectTypes[i], selected)) {
-                mNewObjectType = i;
+                const char* objectTypes[] = { "Sphere", "Cube", "3D Model" };
+                if (ImGui::BeginCombo("Material Type", objectTypes[mNewObjectType])) {
+                    for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
+                        const bool selected = (mNewObjectType == i);
+                        if (ImGui::Selectable(objectTypes[i], selected)) {
+                            mNewObjectType = i;
+                        }
+
+                        if (selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
+                bool valid = true;
+
+                if (objectTypes[mNewObjectType] == "3D Model") {
+                    char buffer[100];
+                    sprintf_s(buffer, mNewObjectPath.c_str(), mNewObjectPath.length());
+                    std::ifstream file(mNewObjectPath);
+                    valid = file.good();
+                    if (!valid) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                    ImGui::InputText("File Path", buffer, 100);
+                    if (!valid) ImGui::PopStyleColor();
+                    mNewObjectPath = buffer;
+
+                    if (ImGui::Button("Browse for file")) {
+                        nfdchar_t* path = NULL;
+                        nfdresult_t result = NFD_OpenDialog("obj", NULL, &path);
+                        mNewObjectPath = AbsolutePathToRelative(path);
+                    }
+                }
+
+                if (ImGui::Button("Ok") && valid) {
+                    ImGui::CloseCurrentPopup();
+                    Object* object;
+
+                    if (objectTypes[mNewObjectType] == "Sphere") {
+                        object = (Object*) new Sphere(Vector3f(), 0.5, Material());
+                    }
+                    else if (objectTypes[mNewObjectType] == "Cube") {
+                        object = (Object*) new Mesh({ 0, 0, 0 }, "Cube.obj", Material());
+                    }
+                    else if (objectTypes[mNewObjectType] == "3D Model") {
+                        object = (Object*) new Mesh({ 0, 0, 0 }, mNewObjectPath.c_str(), Material());
+                    }
+
+                    mRedrawThisFrame = true;
+                    mScene.AddObject(mNewObjectName.c_str(), object);
+                    mSelectedObject = mScene.GetObjectCount() - 1;
+                    mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
+                    mNewObjectPath = "";
+                    mNewObjectType = 0;
+                }
+                if (!valid && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+
+                ImGui::SameLine();
+                if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
+
+                ImGui::EndPopup();
             }
 
-            if (selected)
-                ImGui::SetItemDefaultFocus();
-        }
-        ImGui::EndCombo();
-    }
+            // Add each objects to the list
+            for (int n = 0; n < mScene.GetObjectCount(); n++) {
+                ImGui::SetItemAllowOverlap();
+                ImGui::SetCursorPos(ImVec2(8, n * 25 + 20 + 35));
 
-    bool valid = true;
+                Object* obj = mScene.GetObjects()[n];
 
-    if (objectTypes[mNewObjectType] == "3D Model") {
-        char buffer[100];
-        sprintf_s(buffer, mNewObjectPath.c_str(), mNewObjectPath.length());
-        std::ifstream file(mNewObjectPath);
-        valid = file.good();
-        if (!valid) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-        ImGui::InputText("File Path", buffer, 100);
-        if (!valid) ImGui::PopStyleColor();
-        mNewObjectPath = buffer;
+                // Create hidden id for the checkbox.
+                char buf[32];
 
-        if (ImGui::Button("Browse for file")) {
-            nfdchar_t* path = NULL;
-            nfdresult_t result = NFD_OpenDialog("obj", NULL, &path);
-            mNewObjectPath = AbsolutePathToRelative(path);
-        }
-    }
+                // Hidden id for the checkbox
+                sprintf(buf, "##Show %d", n + 1);
 
-    if (ImGui::Button("Ok") && valid) {
-        ImGui::CloseCurrentPopup();
-        Object* object;
+                // Checkbox to show and hide object.
+                mRedrawThisFrame |= ImGui::Checkbox(buf, &obj->show);
 
-        if (objectTypes[mNewObjectType] == "Sphere") {
-            object = (Object*) new Sphere(Vector3f(), 0.5, Material());
-        }
-        else if (objectTypes[mNewObjectType] == "Cube") {
-            object = (Object*) new Mesh({ 0, 0, 0 }, "Cube.obj", Material());
-        }
-        else if (objectTypes[mNewObjectType] == "3D Model") {
-            object = (Object*) new Mesh({ 0, 0, 0 }, mNewObjectPath.c_str(), Material());
-        }
+                ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 3 + 35));
 
-        mRedrawThisFrame = true;
-        mScene.AddObject(mNewObjectName.c_str(), object);
-        mSelectedObject = mScene.GetObjectCount() - 1;
-        mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
-        mNewObjectPath = "";
-        mNewObjectType = 0;
-    }
-    if (!valid && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+                // Create tag for the object (needs an id so that each label is unique)
+                sprintf(buf, (std::string("##object_id_") + std::to_string(mScene.GetObjectID(obj))).c_str(), n + 1);
 
-    ImGui::SameLine();
-    if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
+                // Set currently selected object.
+                if (ImGui::Selectable(buf, mSelectedObject == n)) mSelectedObject = n;
 
-    ImGui::EndPopup();
-}
+                // Draw label
+                ImGui::SameLine();
+                ImGui::Text(obj->name.c_str());
+            }
 
-// Add each objects to the list
-for (int n = 0; n < mScene.GetObjectCount(); n++) {
-    ImGui::SetItemAllowOverlap();
-    ImGui::SetCursorPos(ImVec2(8, n * 25 + 20 + 35));
-
-    Object* obj = mScene.GetObjects()[n];
-
-    // Create hidden id for the checkbox.
-    char buf[32];
-
-    // Checkbox to show and hide object.
-    mRedrawThisFrame |= ImGui::Checkbox(buf, &obj->show);
-
-    ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 3 + 35));
-
-    // Create tag for the object (needs an id so that each label is unique)
-    sprintf(buf, (std::string("##object_id_") + std::to_string(mScene.GetObjectID(obj))).c_str(), n + 1);
-
-    // Set currently selected object.
-    if (ImGui::Selectable(buf, mSelectedObject == n)) mSelectedObject = n;
-
-    // Draw label
-    ImGui::SameLine();
-    ImGui::Text(obj->name.c_str());
-}
-
-ImGui::End();
+            ImGui::End();
         }
 
         // Current object properties
