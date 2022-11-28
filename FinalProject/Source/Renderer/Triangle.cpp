@@ -19,7 +19,7 @@ Triangle::Triangle(Vector3f position, Vector3f verticies[3], Material material) 
     mTransformedVerticies[2] = verticies[2];
 }
 
-bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
+void Triangle::Update() {
     if (mDirty) {
         // Apply transformation matrix
         mTransform = Matrix4x4f::Translate(mPosition) * Matrix4x4f::Rotate(mRotation) * Matrix4x4f::Scale(mScale);
@@ -28,7 +28,9 @@ bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& paylo
         mTransformedVerticies[2] = mTransform * mVerticies[2];
         mDirty = false;
     }
+}
 
+bool Triangle::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
     Vector3f E1 = mTransformedVerticies[1] - mTransformedVerticies[0];
     Vector3f E2 = mTransformedVerticies[2] - mTransformedVerticies[0];
     Vector3f T = ray.GetOrigin() - mTransformedVerticies[0];

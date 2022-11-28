@@ -951,6 +951,9 @@ public:
             mDepthBufferOld = temp;
         }
 
+        // Update object transforms
+        mScene.UpdateObjects();
+
         // Render the image and calculate the time takes.
         std::chrono::system_clock::time_point previousTime = std::chrono::system_clock::now();
         mRenderedImage = GetRenderer()->RenderScene(mScene, mRenderedImage, mDepthBuffer, mPreviewRenderSettings, mFrame);

@@ -128,5 +128,11 @@ bool Scene::ClosestHit(const Ray& ray, float min, float max, RayPayload& payload
     return true;
 }
 
+void Scene::UpdateObjects() {
+    for each (Object* object in mObjects) {
+        object->Update();
+    }
+}
+
 
 }

@@ -77,7 +77,7 @@ void Mesh::LoadFromFile(const char* filePath) {
 	}
 }
 
-bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
+void Mesh::Update() {
 	if (mDirty) {
 		// Apply transformations to mesh
 		for each (Triangle * triangle in mFaces) {
@@ -86,6 +86,8 @@ bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) 
 			object->SetPosition(mPosition);
 			object->SetRotation(mRotation);
 			object->SetScale(mScale);
+
+			object->Update();
 		}
 
 		// TODO: check!!
@@ -117,7 +119,9 @@ bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) 
 
 		mDirty = false;
 	}
+}
 
+bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
 	// TODO: check!!
 	float tx1 = (mTransformedMin.x - ray.GetOrigin().x) / ray.GetDirection().x;
 	float tx2 = (mTransformedMax.x - ray.GetOrigin().x) / ray.GetDirection().x;

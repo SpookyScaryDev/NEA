@@ -33,6 +33,8 @@ public:
     std::vector<Object*>   GetLights() const;
     bool                   ClosestHit(const Ray& ray, float min, float max, RayPayload& payload) const; // Returns true if something is hit. Details are stored in the payload.
 
+    void                   UpdateObjects();
+
     Camera                 camera;
 private:
     bool                   mModified;

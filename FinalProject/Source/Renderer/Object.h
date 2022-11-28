@@ -18,6 +18,8 @@ public:
 	static Object*         LoadFromJSON(nlohmann::json data);
 	virtual nlohmann::json ToJSON();
 
+	virtual void        Update() = 0;
+
 	virtual bool        Intersect(const Ray& ray, float min, float max, RayPayload& payload) = 0;
 
 	virtual Vector3f    Sample(const Vector3f& point, float& pdf, std::mt19937& rnd) = 0;
