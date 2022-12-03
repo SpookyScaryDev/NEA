@@ -4,12 +4,14 @@
 #include <stdio.h>
 #include <iostream>
 #include <SDL.h>
+#include <nfd.h>
 
 #include <fstream>
 #include <filesystem>
 #include <string>
 #include <thread>
 #include <vector>
+#include <algorithm>
 
 #include <Application/Application.h>
 #include <Maths/Ray.h>
@@ -18,14 +20,9 @@
 #include <Renderer/Camera.h>
 #include <Renderer/Sphere.h>
 #include <Renderer/Mesh.h>
+#include <Renderer/Line.h>
 
 #include <Error.h>
-
-#include <nfd.h>
-
-#include <algorithm>
-
-#include <Renderer/Line.h>
 
 using namespace Prototype;
 
@@ -37,7 +34,8 @@ struct RayVisualizationSettings {
     int       initialRays        = 8;
     bool      shortenRays        = true;
     float     shortenedRayLength = 0.3;
-    bool      showAllRays        = true;
+    bool      ignoreSky          = true;
+    bool      ignoreGround       = false;
     float     maxDistance        = 1.5;
     bool      sameColour         = false;
     Colour    lineColour         = { 1, 0, 0 };
@@ -266,6 +264,9 @@ public:
                 return;
             }
 
+            // Ignore rays which hit the ground
+            if (payload.object->name == "Ground" && mRayVisualizationSettings.ignoreGround) return;
+
             Ray newRay = Ray(Vector3f(), Vector3f());
             float pdf;
             payload.material->Scatter(ray, newRay, pdf, payload, rnd);
@@ -289,7 +290,7 @@ public:
         }
         else {
             // Draw rays which go off into the sky.
-            if (depth > 1 || mRayVisualizationSettings.showAllRays) {
+            if (depth > 1 && !mRayVisualizationSettings.ignoreSky) {
                 if (mRayVisualizationSettings.shortenRays) {
                     currentLine.end = ray.GetPointAt(mRayVisualizationSettings.shortenedRayLength);
                     length += mRayVisualizationSettings.shortenedRayLength;
@@ -554,10 +555,30 @@ public:
                     obj->SetRotation(rotation);
                 }
 
+                //ImGui::Checkbox("Update regularly", &mRayVisualizationSettings.updateRegularly);
+                //ImGui::DragInt("Update Frames", &mRayVisualizationSettings.framesPerUpdate, 1, 1, 10);
+
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.45);
                 if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01)) {
                     mRedrawThisFrame = true;
+                    if (obj->lockAspectRatio) {
+                        Vector3f difference = scale - obj->GetScale();
+                        for (int i = 0; i < 3; i++) {
+                            if (difference[i] != 0) {
+                                float factor = scale[i] / obj->GetScale()[i];
+                                scale = obj->GetScale() * factor;
+                            }
+                        }
+                    }
                     obj->SetScale(scale);
                 }
+                ImGui::PopItemWidth();
+                ImGui::SameLine();
+                ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() * 0.65 - 14, ImGui::GetCursorPosY()));
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 + 10);
+                ImGui::Checkbox("Lock aspect ratio", &obj->lockAspectRatio);
+                ImGui::PopItemWidth();
+
 
                 obj->name = std::string(buffer);
 
@@ -675,7 +696,10 @@ public:
         {
             ImGui::Begin("Ray Visualization");
             ImGui::Checkbox("Show visualization", &mRayVisualizationSettings.enable);
-            ImGui::Checkbox("Show all rays", &mRayVisualizationSettings.showAllRays);
+
+            ImGui::Checkbox("Ignore sky", &mRayVisualizationSettings.ignoreSky);
+            ImGui::SameLine();
+            ImGui::Checkbox("Ignore ground", &mRayVisualizationSettings.ignoreGround);
 
             ImGui::Checkbox("Shorten infinite rays", &mRayVisualizationSettings.shortenRays);
             ImGui::SameLine();

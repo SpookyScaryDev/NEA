@@ -36,6 +36,7 @@ public:
 	Material            material;
 	bool                show;
 	std::string         name;
+	bool                lockAspectRatio;
 
 protected:
 	Vector3f            mPosition;

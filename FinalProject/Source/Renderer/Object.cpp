@@ -12,6 +12,7 @@ Object::Object(Vector3f position, Material material) :
 	mPosition(position), material(material), mScale(Vector3f(1, 1, 1)) 
 {
 	show = true;
+	lockAspectRatio = true;
 	mDirty = true;
 	mTransform = Matrix4x4f::Identity();
 }
@@ -35,6 +36,7 @@ Object* Object::LoadFromJSON(nlohmann::json data) {
 
 	object->name = data["name"];
 	object->show = data["show"];
+	if (data.contains("lockAspectRatio")) object->lockAspectRatio = data["lockAspectRatio"];
 	object->SetRotation(Vector3f::LoadFromJSON(data["rotation"]));
 
     return object;
@@ -48,6 +50,7 @@ nlohmann::json Object::ToJSON() {
 	data["scale"] = mScale.ToJSON();
 	data["material"] = material.ToJSON();
 	data["show"] = show;
+	data["lockAspectRatio"] = lockAspectRatio;
 
 	return data;
 }
