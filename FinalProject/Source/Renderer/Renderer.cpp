@@ -132,6 +132,9 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
             colour += payload.material->Emit();
         }
 
+        //if (!payload.frontFace) return Vector3f();
+        //return 0.5 * (payload.normal + Vector3f(1, 1, 1));
+
         return colour + TraceRay(scene, depthMap, newRay, depth, settings, rnd) * payload.material->colour;
     }
     else {

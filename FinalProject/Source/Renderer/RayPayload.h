@@ -13,6 +13,7 @@ struct RayPayload {
     Vector3f            normal;     // The normal to the surface at the point of intersection. Always points outwards.
     bool                frontFace;  // True if the ray came intersected from outside the object.
     float               t;          // The point along the ray where the interseciton occured.
+    float               t2;
     Material*           material;
     Object*             object;
 };

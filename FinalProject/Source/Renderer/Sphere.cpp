@@ -41,13 +41,18 @@ bool Sphere::Intersect(const Ray& ray, float min, float max, RayPayload& payload
 
 		// Let t be the closer point which lies within the ray range
 		float t = 0;
-		if (t1 <= max && t1 >= min) t = t1;
+		float t2Final = 0;
+		if (t1 <= max && t1 >= min) {
+			t = t1;
+			t2Final = t2;
+		}
 		else if (t2 <= max && t2 >= min) t = t2;
 		else return false;
 
 		// If t is within the acceptable range
 		if (t <= max && t >= min) {
 			payload.t = t;
+			payload.t2 = t2Final;
 			payload.point = ray.GetPointAt(payload.t);
 			payload.normal = payload.point - mPosition;
 			payload.normal.Normalize();	

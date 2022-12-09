@@ -73,6 +73,7 @@ bool Material::Scatter(const Ray& incoming, Ray& out, float& pdf, const RayPaylo
 
     case MaterialType::Glossy: {
         // Reflects according to Snell's law, with randomization determined by roughness.
+        Vector3f normal = payload.frontFace ? payload.normal : -1 * payload.normal;
         Vector3f direction = Reflect(incoming.GetDirection(), payload.normal);
         if (roughness > 0) direction = Sampling::SampleDirectionInPhong(direction, 1000-roughness, rnd);
         //direction += roughness * RandomInUnitHemisphere(direction, rnd);

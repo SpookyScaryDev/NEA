@@ -2,6 +2,7 @@
 
 #include <Renderer/Sphere.h>
 #include <Renderer/Mesh.h>
+#include <Renderer/DivergingLens.h>
 
 #include <nlohmann/json.hpp>
 
@@ -33,11 +34,15 @@ Object* Object::LoadFromJSON(nlohmann::json data) {
         object = (Object*) new Mesh(position, filePath.c_str(), material);
 		object->SetScale(Vector3f::LoadFromJSON(data["scale"]));
     }
+	if (type == "divergingLens") {
+		object = (Object*) new DivergingLens(position, data["width"], data["curvature"], material);
+	}
 
 	object->name = data["name"];
 	object->show = data["show"];
 	if (data.contains("lockAspectRatio")) object->lockAspectRatio = data["lockAspectRatio"];
 	object->SetRotation(Vector3f::LoadFromJSON(data["rotation"]));
+	object->SetScale(Vector3f::LoadFromJSON(data["scale"]));
 
     return object;
 }

@@ -19,6 +19,7 @@
 #include <Renderer/Texture.h>
 #include <Renderer/Camera.h>
 #include <Renderer/Sphere.h>
+#include <Renderer/DivergingLens.h>
 #include <Renderer/Mesh.h>
 #include <Renderer/Line.h>
 
@@ -431,7 +432,7 @@ public:
                 ImGui::InputText("Name", nameBuffer, 100);
                 mNewObjectName = nameBuffer;
 
-                const char* objectTypes[] = { "Sphere", "Cube", "3D Model" };
+                const char* objectTypes[] = { "Sphere", "Cube", "3D Model", "Diverging Lens"};
                 if (ImGui::BeginCombo("Material Type", objectTypes[mNewObjectType])) {
                     for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
                         const bool selected = (mNewObjectType == i);
@@ -476,6 +477,9 @@ public:
                     }
                     else if (objectTypes[mNewObjectType] == "3D Model") {
                         object = (Object*) new Mesh({ 0, 0, 0 }, mNewObjectPath.c_str(), Material());
+                    }
+                    else if (objectTypes[mNewObjectType] == "Diverging Lens") {
+                        object = (Object*) new DivergingLens({ 0, 0, 0 }, 0.1, 2, Material());
                     }
 
                     mRedrawThisFrame = true;
