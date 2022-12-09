@@ -8,7 +8,7 @@
 namespace Prototype {
 
 Triangle::Triangle(Vector3f position, Vector3f verticies[3], Material material) :
-	Object(position, material)
+	Object(position, material, ObjectType::Triangle)
 {
 	mVerticies[0] = verticies[0];
 	mVerticies[1] = verticies[1];

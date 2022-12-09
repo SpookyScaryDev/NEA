@@ -11,7 +11,7 @@ using json = nlohmann::json;
 namespace Prototype {
 
 	DivergingLens::DivergingLens(Vector3f position, float width, float curvature, Material material) :
-		Object(position, material)
+		Object(position, material, ObjectType::DivergingLens)
 	{
 		mWidth = 0.5;
 		mCurvature = 5;

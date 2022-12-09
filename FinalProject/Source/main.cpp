@@ -511,7 +511,10 @@ public:
                 sprintf(buf, "##Show %d", n + 1);
 
                 // Checkbox to show and hide object.
-                mRedrawThisFrame |= ImGui::Checkbox(buf, &obj->show);
+                if (ImGui::Checkbox(buf, &obj->show)) {
+                    mRedrawThisFrame = true;
+                    if (!obj->show) mSelectedObject = -1;
+                }
 
                 ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 3 + 35));
 
@@ -551,37 +554,62 @@ public:
                     obj->SetPosition(position);
                 }
 
-                if (ImGui::DragFloat3("Rotation", (float*)&rotation, 1)) {
-                    mRedrawThisFrame = true;
-                    rotation.x = fmod(rotation.x, 360);
-                    rotation.y = fmod(rotation.y, 360);
-                    rotation.z = fmod(rotation.z, 360);
-                    obj->SetRotation(rotation);
+                if (obj->GetType() != ObjectType::Sphere) {
+                    if (ImGui::DragFloat3("Rotation", (float*)&rotation, 1)) {
+                        mRedrawThisFrame = true;
+                        rotation.x = fmod(rotation.x, 360);
+                        rotation.y = fmod(rotation.y, 360);
+                        rotation.z = fmod(rotation.z, 360);
+                        obj->SetRotation(rotation);
+                    }
                 }
 
-                //ImGui::Checkbox("Update regularly", &mRayVisualizationSettings.updateRegularly);
-                //ImGui::DragInt("Update Frames", &mRayVisualizationSettings.framesPerUpdate, 1, 1, 10);
+                if (obj->GetType() == ObjectType::Sphere) {
+                    if (ImGui::DragFloat("Radius", (float*)&scale.x, 0.01, 0.01, 100)) {
+                        mRedrawThisFrame = true;
+                        obj->SetScale(scale);
+                    }
+                }
+                else if (obj->GetType() == ObjectType::DivergingLens) {
+                    DivergingLens* lens = (DivergingLens*)obj;
+                    float width = lens->GetWidth();
+                    float curvature = lens->GetCurvature();
 
-                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.45);
-                if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01)) {
-                    mRedrawThisFrame = true;
-                    if (obj->lockAspectRatio) {
-                        Vector3f difference = scale - obj->GetScale();
-                        for (int i = 0; i < 3; i++) {
-                            if (difference[i] != 0) {
-                                float factor = scale[i] / obj->GetScale()[i];
-                                scale = obj->GetScale() * factor;
+                    if (ImGui::DragFloat("Scale", (float*)&scale.x, 0.01, 0.01, 100)) {
+                        mRedrawThisFrame = true;
+                        obj->SetScale(scale);
+                    }
+                    if (ImGui::DragFloat("Width", (float*)&width, 0.01, 0.01, 1)) {
+                        mRedrawThisFrame = true;
+                        lens->SetWidth(width);
+                    }
+                    if (ImGui::DragFloat("Curvature", (float*)&curvature, 0.01, 0, 10)) {
+                        mRedrawThisFrame = true;
+                        lens->SetCurvature(curvature);
+                    }
+                }
+                else {
+                    ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.45);
+                    if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01, 0.01, 100)) {
+                        mRedrawThisFrame = true;
+                        if (obj->lockAspectRatio) {
+                            Vector3f difference = scale - obj->GetScale();
+                            for (int i = 0; i < 3; i++) {
+                                if (difference[i] != 0) {
+                                    float factor = scale[i] / obj->GetScale()[i];
+                                    scale = obj->GetScale() * factor;
+                                }
                             }
                         }
+                        obj->SetScale(scale);
                     }
-                    obj->SetScale(scale);
+                    ImGui::PopItemWidth();
+                    ImGui::SameLine();
+                    ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() * 0.65 - 14, ImGui::GetCursorPosY()));
+                    ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 + 10);
+                    ImGui::Checkbox("Lock aspect ratio", &obj->lockAspectRatio);
+                    ImGui::PopItemWidth();
                 }
-                ImGui::PopItemWidth();
-                ImGui::SameLine();
-                ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() * 0.65 - 14, ImGui::GetCursorPosY()));
-                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 + 10);
-                ImGui::Checkbox("Lock aspect ratio", &obj->lockAspectRatio);
-                ImGui::PopItemWidth();
 
 
                 obj->name = std::string(buffer);

@@ -9,13 +9,14 @@
 using json = nlohmann::json;
 
 namespace Prototype {
-Object::Object(Vector3f position, Material material) :
+Object::Object(Vector3f position, Material material, ObjectType type) :
 	mPosition(position), material(material), mScale(Vector3f(1, 1, 1)) 
 {
 	show = true;
 	lockAspectRatio = true;
 	mDirty = true;
 	mTransform = Matrix4x4f::Identity();
+	mType = type;
 }
 
 Object* Object::LoadFromJSON(nlohmann::json data) {
@@ -85,6 +86,10 @@ Vector3f Object::GetScale() const {
 void Object::SetScale(const Vector3f& scale) {
 	mScale = scale;
 	mDirty = true;
+}
+
+ObjectType Object::GetType() const {
+	return mType;
 }
 
 }

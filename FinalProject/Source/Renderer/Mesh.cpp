@@ -17,7 +17,7 @@ using json = nlohmann::json;
 namespace Prototype {
 
 Mesh::Mesh(Vector3f position, const char* filePath, Material material) :
-	Object(position, material)
+	Object(position, material, ObjectType::Mesh)
 {
 	mFilePath = filePath;
 	LoadFromFile(filePath);

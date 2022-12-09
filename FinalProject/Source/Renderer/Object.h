@@ -11,9 +11,16 @@
 
 namespace Prototype {
 
+enum class ObjectType {
+	Sphere,
+	Mesh,
+	DivergingLens,
+	Triangle
+};
+
 class Object {
 public:
-	                    Object(Vector3f position, Material material);
+	                    Object(Vector3f position, Material material, ObjectType type);
 
 	static Object*         LoadFromJSON(nlohmann::json data);
 	virtual nlohmann::json ToJSON();
@@ -33,12 +40,16 @@ public:
 	Vector3f            GetScale() const;
 	void                SetScale(const Vector3f& scale);
 
+	ObjectType          GetType() const;
+
 	Material            material;
 	bool                show;
 	std::string         name;
 	bool                lockAspectRatio;
 
 protected:
+	ObjectType          mType;
+
 	Vector3f            mPosition;
 	Vector3f            mRotation;
 	Vector3f            mScale;

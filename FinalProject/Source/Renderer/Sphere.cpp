@@ -14,7 +14,7 @@ namespace Prototype {
 
 Sphere::Sphere(Vector3f position, float radius, Material material) :
 	radius(radius),
-	Object(position, material)
+	Object(position, material, ObjectType::Sphere)
 {
 	mScale = radius;
 }
