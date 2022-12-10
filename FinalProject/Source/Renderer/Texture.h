@@ -25,6 +25,8 @@ public:
     Vector3f           GetColourAt(const Vector2f& position);
     void               SetColourAt(const Vector2f& position, const Colour& colour);
 
+    void               SaveToFile(const char* path);
+
 private:
     SDL_Texture*       mTextureData;
     void*              mPixelData;

@@ -72,4 +72,11 @@ void Texture::SetColourAt(const Vector2f& position, const Colour& colour) {
     pixels[(int)(position.y * (mPitch / sizeof(unsigned int)) + position.x)] = pixel;
 }
 
+void Texture::SaveToFile(const char* path) {
+    Lock();
+    SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(mPixelData, mWidth, mHeight, mPixelFormat->BitsPerPixel, mPitch, mPixelFormat->Rmask, mPixelFormat->Gmask, mPixelFormat->Bmask, mPixelFormat->Amask);
+    Unlock();
+    SDL_SaveBMP(surface, path);
+}
+
 }

@@ -94,6 +94,14 @@ public:
         mPreviewRenderSettings.checkerboard = false;
         mPreviewRenderSettings.directLightSampling = true;
 
+        mOutputRenderSettings = RenderSettings();
+        mOutputRenderSettings.resolution = { (float)mInternalWidth * 4, (float)mInternalHeight * 4};
+        mOutputRenderSettings.maxDepth = 100;
+        mOutputRenderSettings.samples = 50;
+        mOutputRenderSettings.ambientLight = Vector3f(1, 1, 1);
+        mOutputRenderSettings.checkerboard = false;
+        mOutputRenderSettings.directLightSampling = true;
+
         mRedrawThisFrame = false;
         mLoadedSceneThisFrame = true;
 
@@ -111,6 +119,8 @@ public:
         mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
 
         GenerateVisualization();
+
+        RenderToImage();
     }
 
     void SetUpImGui() {
@@ -915,20 +925,20 @@ public:
         }
     }
 
-    void ConvertRenderedImageToTexture(Colour** image, Texture* texture) {
+    void ConvertRenderedImageToTexture(Colour** image, Texture* texture, RenderSettings settings) {
         texture->Lock();
-        for (int y = 0; y < mPreviewRenderSettings.resolution.y; y++) {
-            for (int x = 0; x < mPreviewRenderSettings.resolution.x; x++) {
+        for (int y = 0; y < settings.resolution.y; y++) {
+            for (int x = 0; x < settings.resolution.x; x++) {
                 Colour colour = Vector3f();
 
                 // If checkerboard rendering is enabled, fill in the empty squares.
-                if (mPreviewRenderSettings.checkerboard && !((x % 2 == 0 && y % 2 == 0) || (x % 2 != 0 && y % 2 != 0))) {
+                if (settings.checkerboard && !((x % 2 == 0 && y % 2 == 0) || (x % 2 != 0 && y % 2 != 0))) {
                     int samples = 0;
                     if (x - 1 >= 0) {
                         colour += image[x - 1][y];
                         samples++;
                     }
-                    if (x + 1 < mPreviewRenderSettings.resolution.x) {
+                    if (x + 1 < settings.resolution.x) {
                         colour += image[x + 1][y];
                         samples++;
                     }
@@ -936,7 +946,7 @@ public:
                         colour += image[x][y - 1];
                         samples++;
                     }
-                    if (y + 1 < mPreviewRenderSettings.resolution.y) {
+                    if (y + 1 < settings.resolution.y) {
                         colour += image[x][y + 1];
                         samples++;
                     }
@@ -1023,6 +1033,25 @@ public:
         }
     }
 
+    void RenderToImage() {
+        Colour** output = new Colour * [mOutputRenderSettings.resolution.x];
+        float** outputDepth = new float * [mOutputRenderSettings.resolution.x];
+        for (int i = 0; i < mOutputRenderSettings.resolution.x; i++) {
+            output[i] = new Colour[mOutputRenderSettings.resolution.y];
+            outputDepth[i] = new float[mOutputRenderSettings.resolution.y];
+        }
+        Texture* outputTexture = new Texture(mOutputRenderSettings.resolution.x, mOutputRenderSettings.resolution.y);
+        
+        SDL_SetTextureScaleMode(outputTexture->GetRawTexture(), SDL_ScaleModeBest);
+
+        mScene.UpdateObjects();
+
+        output = GetRenderer()->RenderScene(mScene, output, outputDepth, mOutputRenderSettings, 1);
+        ConvertRenderedImageToTexture(output, outputTexture, mOutputRenderSettings);
+
+        outputTexture->SaveToFile("test.bmp");
+    }
+
     void Update(float deltaTime) {
         // Update the window title to show the name of the scene
         std::string title = "Ray Tracing Optics Simulator: ";
@@ -1072,7 +1101,7 @@ public:
 
         CalculateObjectVisability();
 
-        ConvertRenderedImageToTexture(mRenderedImage, mOutputTexture);
+        ConvertRenderedImageToTexture(mRenderedImage, mOutputTexture, mPreviewRenderSettings);
         if (mRayVisualizationSettings.enable) DrawRayVisualization();
         DrawSelectedObjectOutline(mOutputTexture);
 
@@ -1106,6 +1135,7 @@ private:
     float**    mDepthBufferOld;
 
     RenderSettings mPreviewRenderSettings;
+    RenderSettings mOutputRenderSettings;
 
     std::string   mNewObjectName; // Data for creating a new object.
     int           mNewObjectType;

@@ -99,7 +99,7 @@ Colour Renderer::GatherDirectLighting(const Scene& scene, const RayPayload& payl
     return light;
 }
 
-Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int depth, const RenderSettings& settings, std::mt19937& rnd) {
+Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int depth, bool lightNext, const RenderSettings& settings, std::mt19937& rnd) {
     // Don't go on forever!
     if (depth >= settings.maxDepth) {
         return Vector3f();
@@ -124,8 +124,9 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
             Colour light = GatherDirectLighting(scene, payload, rnd);
 
             // If this is the first bounce, add the emitted lighting so that lights appear bright.
+            // Of if hit a light and the last object hit should have a highlight.
             // TODO: make sure lights are only sampled once!!
-            if (depth == 1) light += payload.material->Emit();
+            if (depth == 1 || (lightNext && payload.material->emitted != 0)) light += payload.material->Emit();
             colour += light * payload.material->colour;
         }
         else {
@@ -134,8 +135,10 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
 
         //if (!payload.frontFace) return Vector3f();
         //return 0.5 * (payload.normal + Vector3f(1, 1, 1));
+        lightNext = false;
+        if (payload.material->materialType != MaterialType::Lambertian  && depth == 1) lightNext = true;
 
-        return colour + TraceRay(scene, depthMap, newRay, depth, settings, rnd) * payload.material->colour;
+        return colour + TraceRay(scene, depthMap, newRay, depth, lightNext, settings, rnd) * payload.material->colour;
     }
     else {
         if (depth == 1) {
@@ -171,7 +174,7 @@ void Renderer::RenderStrip(Scene scene, Colour** image, float** depthMap, const 
                     Ray rayRand = Ray(scene.camera.position, viewportPosRand);
 
 
-                    colour += TraceRay(scene, &depthMap[x][y], rayRand, 0, settings, rnd);
+                    colour += TraceRay(scene, &depthMap[x][y], rayRand, 0, false, settings, rnd);
                     //if (depthMap[x][y] > 0) colour += Vector3f(1, 1, 1) / depthMap[x][y];
                 }
                 colour /= settings.samples;
