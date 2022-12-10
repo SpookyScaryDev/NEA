@@ -505,7 +505,7 @@
             "type": "mesh"
         },
         {
-            "curvature": 10.0,
+            "curvature": 2,
             "lockAspectRatio": true,
             "material": {
                 "colour": [

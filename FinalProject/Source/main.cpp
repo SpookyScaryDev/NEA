@@ -21,6 +21,7 @@
 #include <Renderer/Camera.h>
 #include <Renderer/Sphere.h>
 #include <Renderer/DivergingLens.h>
+#include <Renderer/ConvergingLens.h>
 #include <Renderer/Mesh.h>
 #include <Renderer/Line.h>
 
@@ -458,7 +459,7 @@ public:
                 ImGui::InputText("Name", nameBuffer, 100);
                 mNewObjectName = nameBuffer;
 
-                const char* objectTypes[] = { "Sphere", "Cube", "3D Model", "Diverging Lens"};
+                const char* objectTypes[] = { "Sphere", "Cube", "3D Model", "Diverging Lens", "Converging Lens" };
                 if (ImGui::BeginCombo("Material Type", objectTypes[mNewObjectType])) {
                     for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
                         const bool selected = (mNewObjectType == i);
@@ -506,6 +507,9 @@ public:
                     }
                     else if (objectTypes[mNewObjectType] == "Diverging Lens") {
                         object = (Object*) new DivergingLens({ 0, 0, 0 }, 0.1, 2, Material());
+                    }
+                    else if (objectTypes[mNewObjectType] == "Converging Lens") {
+                        object = (Object*) new ConvergingLens({ 0, 0, 0 }, 0.5, Material());
                     }
 
                     mRedrawThisFrame = true;
@@ -612,6 +616,19 @@ public:
                     if (ImGui::DragFloat("Curvature", (float*)&curvature, 0.01, 0.01, 2)) {
                         mRedrawThisFrame = true;
                         lens->SetCurvature(curvature);
+                    }
+                }
+                else if (obj->GetType() == ObjectType::ConvergingLens) {
+                    ConvergingLens* lens = (ConvergingLens*)obj;
+                    float width = lens->GetWidth();
+
+                    if (ImGui::DragFloat("Scale", (float*)&scale.x, 0.01, 0.01, 100)) {
+                        mRedrawThisFrame = true;
+                        obj->SetScale(scale);
+                    }
+                    if (ImGui::DragFloat("Width", (float*)&width, 0.01, 0.01, 1)) {
+                        mRedrawThisFrame = true;
+                        lens->SetWidth(width);
                     }
                 }
                 else {

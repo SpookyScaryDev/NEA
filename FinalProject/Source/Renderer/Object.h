@@ -15,7 +15,8 @@ enum class ObjectType {
 	Sphere,
 	Mesh,
 	DivergingLens,
-	Triangle
+	Triangle,
+	ConvergingLens
 };
 
 class Object {

@@ -3,6 +3,7 @@
 #include <Renderer/Sphere.h>
 #include <Renderer/Mesh.h>
 #include <Renderer/DivergingLens.h>
+#include <Renderer/ConvergingLens.h>
 
 #include <nlohmann/json.hpp>
 
@@ -37,6 +38,9 @@ Object* Object::LoadFromJSON(nlohmann::json data) {
     }
 	if (type == "divergingLens") {
 		object = (Object*) new DivergingLens(position, data["width"], data["curvature"], material);
+	}
+	if (type == "convergingLens") {
+		object = (Object*) new ConvergingLens(position, data["width"], material);
 	}
 
 	object->name = data["name"];

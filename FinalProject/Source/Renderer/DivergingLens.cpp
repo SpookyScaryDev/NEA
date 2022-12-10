@@ -13,9 +13,8 @@ namespace Prototype {
 	DivergingLens::DivergingLens(Vector3f position, float width, float curvature, Material material) :
 		Object(position, material, ObjectType::DivergingLens)
 	{
-		mWidth = 0.5;
-		mCurvature = 5;
-
+		mWidth = width;
+		mCurvature = curvature;
 		mCenter =  (Object*) new Sphere(position, 1, material);
 		mSphere1 = (Object*) new Sphere(position + Vector3f(0, 0, mCurvature + mWidth), 1, material);
 		mSphere2 = (Object*) new Sphere(position - Vector3f(0, 0, mCurvature + mWidth), 1, material);
