@@ -5,6 +5,7 @@
 #include <iostream>
 #include <SDL.h>
 #include <nfd.h>
+#include <nlohmann/json.hpp>
 
 #include <fstream>
 #include <filesystem>
@@ -26,6 +27,7 @@
 #include <Error.h>
 
 using namespace Prototype;
+using json = nlohmann::json;
 
 struct RayVisualizationSettings {
     bool      enable             = false;
@@ -40,6 +42,21 @@ struct RayVisualizationSettings {
     float     maxDistance        = 1.5;
     bool      sameColour         = false;
     Colour    lineColour         = { 1, 0, 0 };
+
+    void LoadFromJSON(json data) {
+        enable                   = data["enable"];
+        updateRegularly          = data["enable"];
+        framesPerUpdate          = data["enable"];
+        maxBounceDepth           = data["enable"];
+        initialRays              = data["enable"];
+        shortenRays              = data["enable"];
+        shortenedRayLength       = data["enable"];
+        ignoreSky                = data["enable"];
+        ignoreGround = data["enable"];
+        maxDistance = data["enable"];
+        sameColour = data["enable"];
+        //lineColour = data["enable"];
+    }
 };
 
 class FinalApp : public Application {
@@ -178,6 +195,15 @@ public:
         else {
             ImGui::StyleColorsLight();
         }
+    }
+
+    void LoadSettingsFromFile(std::string filePath) {
+        std::ifstream file(filePath);
+        json data = json::parse(file);
+
+        
+
+        file.close();
     }
 
     bool OpenFile(std::string fileterList, std::string& filePath) {
@@ -583,7 +609,7 @@ public:
                         mRedrawThisFrame = true;
                         lens->SetWidth(width);
                     }
-                    if (ImGui::DragFloat("Curvature", (float*)&curvature, 0.01, 0, 10)) {
+                    if (ImGui::DragFloat("Curvature", (float*)&curvature, 0.01, 0.01, 2)) {
                         mRedrawThisFrame = true;
                         lens->SetCurvature(curvature);
                     }

@@ -17,8 +17,8 @@ namespace Prototype {
 		mCurvature = 5;
 
 		mCenter =  (Object*) new Sphere(position, 1, material);
-		mSphere1 = (Object*) new Sphere(position + Vector3f(0, 0, mCurvature + mWidth), mCurvature, material);
-		mSphere2 = (Object*) new Sphere(position - Vector3f(0, 0, mCurvature + mWidth), mCurvature, material);
+		mSphere1 = (Object*) new Sphere(position + Vector3f(0, 0, mCurvature + mWidth), 1, material);
+		mSphere2 = (Object*) new Sphere(position - Vector3f(0, 0, mCurvature + mWidth), 1, material);
 	}
 
 	nlohmann::json DivergingLens::ToJSON() {
@@ -37,7 +37,7 @@ namespace Prototype {
 			mCenter->SetScale(mScale);
 			Vector3f outerPos = Vector3f(mCurvature + mWidth, 0, 0);
 			outerPos = rotation * outerPos;
-			outerPos = outerPos * mScale;
+			outerPos = outerPos * mScale.x;
 			mSphere1->SetPosition(mPosition + outerPos);
 			mSphere1->SetScale(mScale * mCurvature);
 			mSphere2->SetPosition(mPosition - outerPos);
@@ -101,8 +101,8 @@ namespace Prototype {
 				}
 			}
 			else {
-				if (payloadCenter.frontFace && closerHitSphere.t < payloadCenter.t2) {
-					// Came from completely inside outer sphere and hit lens.
+				if (!payloadCenter.frontFace && closerHitSphere.t < payloadCenter.t) {
+					// Came from overlap between outer and center spheres.
 					payload.t = closerHitSphere.t;
 					payload.point = ray.GetPointAt(payload.t);
 					payload.normal = closerHitSphere.object->GetPosition() - payload.point;
@@ -112,8 +112,8 @@ namespace Prototype {
 					payload.object = this;
 					return true;
 				}
-				if (!payloadCenter.frontFace && closerHitSphere.t < payloadCenter.t) {
-					// Came from overlap between outer and center spheres.
+				if (payloadCenter.frontFace && closerHitSphere.t < payloadCenter.t2) {
+					// Came from completely inside outer sphere and hit lens.
 					payload.t = closerHitSphere.t;
 					payload.point = ray.GetPointAt(payload.t);
 					payload.normal = closerHitSphere.object->GetPosition() - payload.point;
