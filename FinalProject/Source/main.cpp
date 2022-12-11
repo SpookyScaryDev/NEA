@@ -14,6 +14,9 @@
 #include <vector>
 #include <algorithm>
 
+#include <windows.h>
+#include <shellapi.h>
+
 #include <Application/Application.h>
 #include <Maths/Ray.h>
 #include <Maths/Vector3f.h>
@@ -95,15 +98,20 @@ public:
         mPreviewRenderSettings.directLightSampling = true;
 
         mOutputRenderSettings = RenderSettings();
-        mOutputRenderSettings.resolution = { (float)mInternalWidth * 4, (float)mInternalHeight * 4};
-        mOutputRenderSettings.maxDepth = 100;
-        mOutputRenderSettings.samples = 50;
+        mOutputRenderSettings.resolution = { (float)mInternalWidth * 10, (float)mInternalHeight * 10};
+        mOutputRenderSettings.maxDepth = 1000;
+        mOutputRenderSettings.samples = 1000;
         mOutputRenderSettings.ambientLight = Vector3f(1, 1, 1);
-        mOutputRenderSettings.checkerboard = false;
-        mOutputRenderSettings.directLightSampling = true;
+        mOutputRenderSettings.checkerboard = true;
+        mOutputRenderSettings.directLightSampling = false;
 
         mRedrawThisFrame = false;
         mLoadedSceneThisFrame = true;
+
+        mOutputImageDirectory = std::filesystem::current_path().string();
+        mOutputImageName = "output";
+        mOpenDirectoryOnComplete = false;
+        mOpenFileOnComplete = true;
 
         // The image which will be rendered on the GUI.
         mOutputTexture = new Texture(mInternalWidth, mInternalHeight);
@@ -119,8 +127,6 @@ public:
         mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
 
         GenerateVisualization();
-
-        RenderToImage();
     }
 
     void SetUpImGui() {
@@ -222,6 +228,19 @@ public:
         nfdresult_t result = NFD_OpenDialog(fileterList.c_str(), NULL, &path);
         if (result == nfdresult_t::NFD_ERROR) {
             Error(std::string("NFD: Failed to load file! ") + NFD_GetError());
+            return false;
+        }
+        if (result == nfdresult_t::NFD_CANCEL) return false;
+
+        filePath = path;
+        return true;
+    }
+
+    bool GetDirectory(std::string defaultPath, std::string& filePath) {
+        nfdchar_t* path = NULL;
+        nfdresult_t result = NFD_PickFolder(defaultPath.c_str(), &path);
+        if (result == nfdresult_t::NFD_ERROR) {
+            Error(std::string("NFD: Failed open directory dialog! ") + NFD_GetError());
             return false;
         }
         if (result == nfdresult_t::NFD_CANCEL) return false;
@@ -729,6 +748,46 @@ public:
                     mRedrawThisFrame |= ImGui::Checkbox("Explicit Light Sampling", &mPreviewRenderSettings.directLightSampling);
                     ImGui::EndTabItem();
                 }
+                if (ImGui::BeginTabItem("Render")) {
+                    char name[32];
+                    sprintf_s(name, mOutputImageName.c_str(), mOutputImageName.length());
+                    std::ifstream file(mOutputImageDirectory + "\\" +  mOutputImageName + ".bmp");
+                    bool validName = !file.good();
+                    if (!validName) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                    ImGui::InputText("Name", name, 32);
+                    if (!validName) ImGui::PopStyleColor();
+                    mOutputImageName = name;
+
+                    char dir[100];
+                    sprintf_s(dir, mOutputImageDirectory.c_str(), mOutputImageDirectory.length());
+                    bool validDir = std::filesystem::exists(mOutputImageDirectory);
+                    if (!validDir) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                    ImGui::InputText("File Path", dir, 100);
+                    if (!validDir) ImGui::PopStyleColor();
+                    mOutputImageDirectory = dir;
+
+                    if (ImGui::Button("Browse for directory")) {
+                        GetDirectory(mOutputImageDirectory, mOutputImageDirectory);
+                    }
+
+                    ImGui::Checkbox("Open directory when done", &mOpenDirectoryOnComplete);
+                    ImGui::Checkbox("Open file when done", &mOpenFileOnComplete);
+
+                    if (ImGui::Button("Render Image")) {
+                        if (validName && validDir) RenderToImage();
+                    }
+
+                    if ((!validName || !validDir) && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+
+                    ImGui::NewLine();
+
+                    ImGui::SliderInt("Max Depth", &mOutputRenderSettings.maxDepth, 1, 100);
+                    ImGui::SliderInt("Samples Per Frame", &mOutputRenderSettings.samples, 1, 100);
+                    ImGui::ColorEdit3("Ambient Light Colour", (float*)&mOutputRenderSettings.ambientLight);
+                    ImGui::Checkbox("Checkerboard", &mOutputRenderSettings.checkerboard);
+                    ImGui::Checkbox("Explicit Light Sampling", &mOutputRenderSettings.directLightSampling);
+                    ImGui::EndTabItem();
+                }
                 ImGui::EndTabBar();
             }
 
@@ -1049,7 +1108,13 @@ public:
         output = GetRenderer()->RenderScene(mScene, output, outputDepth, mOutputRenderSettings, 1);
         ConvertRenderedImageToTexture(output, outputTexture, mOutputRenderSettings);
 
-        outputTexture->SaveToFile("test.bmp");
+        outputTexture->SaveToFile((mOutputImageDirectory + "\\" + mOutputImageName + ".bmp").c_str());
+
+#ifdef WINDOWS
+        if (mOpenDirectoryOnComplete) ShellExecuteA(NULL, "open", mOutputImageDirectory.c_str(), NULL, NULL, SW_SHOWDEFAULT);
+        if (mOpenFileOnComplete)      ShellExecuteA(NULL, "open", (mOutputImageDirectory + "\\" + mOutputImageName + ".bmp").c_str(), NULL, NULL, SW_SHOWDEFAULT);
+#endif // WINDOWS
+
     }
 
     void Update(float deltaTime) {
@@ -1136,6 +1201,11 @@ private:
 
     RenderSettings mPreviewRenderSettings;
     RenderSettings mOutputRenderSettings;
+
+    std::string   mOutputImageName;
+    std::string   mOutputImageDirectory;
+    bool          mOpenDirectoryOnComplete;
+    bool          mOpenFileOnComplete;
 
     std::string   mNewObjectName; // Data for creating a new object.
     int           mNewObjectType;
