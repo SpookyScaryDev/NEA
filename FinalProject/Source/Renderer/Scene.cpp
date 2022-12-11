@@ -64,6 +64,10 @@ std::string Scene::GetName() const {
     return name.c_str();
 }
 
+std::string Scene::GetPath() const {
+    return mFilePath;
+}
+
 void Scene::SetModified() {
     mModified = true;
 }

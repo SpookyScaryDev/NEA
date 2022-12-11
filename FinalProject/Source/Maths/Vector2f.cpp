@@ -3,10 +3,31 @@
 #include <math.h>
 #include <Error.h>
 
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
 namespace Prototype {
 
 Vector2f::Vector2f(float fx, float fy) :
     x(fx), y(fy) {}
+
+Vector2f Vector2f::LoadFromJSON(json data) {
+    Vector2f vector;
+    int element = 0;
+
+    for (json::iterator i = data.begin(); i != data.end(); i++) {
+        vector[element] = *i;
+        element++;
+    }
+
+    return vector;
+}
+
+nlohmann::json Vector2f::ToJSON() {
+    json data = { x, y };
+    return data;
+}
 
 void Vector2f::Set(float fx, float fy) {
     x = fx;

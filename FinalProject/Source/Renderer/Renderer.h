@@ -6,6 +6,7 @@
 #include <Renderer/Scene.h>
 #include <Window/Window.h>
 #include <random>
+#include <nlohmann/json.hpp>
 
 struct SDL_Renderer;
 
@@ -18,6 +19,9 @@ struct RenderSettings {
     Colour              ambientLight;
     bool                checkerboard;
     bool                directLightSampling;
+
+    nlohmann::json      ToJSON();
+    void                LoadFromJSON(nlohmann::json data);
 };
 
 class Renderer { 

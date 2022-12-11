@@ -10,12 +10,38 @@
 #include <Maths/Sampling.h>
 #include <Renderer/RayPayload.h>
 
+#include <nlohmann/json.hpp>
+
 #include "Sphere.h"
 #include "Camera.h"
 
 #include <Error.h>
 
+using json = nlohmann::json;
+
 namespace Prototype {
+
+nlohmann::json RenderSettings::ToJSON() {
+    json data = json();
+    data["resolution"]          = resolution.ToJSON();
+    data["maxDepth"]            = maxDepth;
+    data["samples"]             = samples;
+    data["ambientLight"]        = ambientLight.ToJSON();
+    data["checkerboard"]        = checkerboard;
+    data["directLightSampling"] = directLightSampling;
+
+    return data;
+}
+
+void RenderSettings::LoadFromJSON(json data) {
+    resolution          = Vector2f::LoadFromJSON(data["resolution"]);
+    maxDepth            = data["maxDepth"];
+    samples             = data["samples"];
+    ambientLight        = Vector3f::LoadFromJSON(data["ambientLight"]);
+    checkerboard        = data["checkerboard"];
+    directLightSampling = data["directLightSampling"];
+}
+
 
 Renderer::Renderer() {
     mRawRenderer = nullptr;

@@ -21,6 +21,7 @@ public:
     void                   SaveToFile(const char* filePath);
 
     std::string            GetName() const;
+    std::string            GetPath() const;
     void                   SetModified();
     bool                   IsModified() const;
 

@@ -1,0 +1,50 @@
+{
+    "outputRenderSettings": {
+        "ambientLight": [
+            0.9601770043373108,
+            0.0,
+            0.0
+        ],
+        "checkerboard": true,
+        "directLightSampling": false,
+        "maxDepth": 33,
+        "resolution": [
+            4500.0,
+            2250.0
+        ],
+        "samples": 77
+    },
+    "previewRenderSettings": {
+        "ambientLight": [
+            0.6769911646842957,
+            0.6769911646842957,
+            0.6769911646842957
+        ],
+        "checkerboard": false,
+        "directLightSampling": true,
+        "maxDepth": 44,
+        "resolution": [
+            450.0,
+            225.0
+        ],
+        "samples": 2
+    },
+    "rayVisualizationSettings": {
+        "enable": true,
+        "framesPerUpdate": 2,
+        "ignoreGround": false,
+        "ignoreSky": true,
+        "initialRays": 8,
+        "lineColour": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "maxBounceDepth": 4,
+        "maxDistance": 6.130000114440918,
+        "sameColour": false,
+        "shortenRays": true,
+        "shortenedRayLength": 0.019999999552965164,
+        "updateRegularly": true
+    }
+}

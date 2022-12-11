@@ -47,19 +47,38 @@ struct RayVisualizationSettings {
     bool      sameColour         = false;
     Colour    lineColour         = { 1, 0, 0 };
 
+    json ToJSON() {
+        json data = json();
+
+        data["enable"]             = enable;
+        data["updateRegularly"]    = updateRegularly;
+        data["framesPerUpdate"]    = framesPerUpdate;
+        data["maxBounceDepth"]     = maxBounceDepth;
+        data["initialRays"]        = initialRays;
+        data["shortenRays"]        = shortenRays;
+        data["shortenedRayLength"] = shortenedRayLength;
+        data["ignoreSky"]          = ignoreSky;
+        data["ignoreGround"]       = ignoreGround;
+        data["maxDistance"]        = maxDistance;
+        data["sameColour"]         = sameColour;
+        data["lineColour"]         = lineColour.ToJSON();;
+
+        return data;
+    }
+
     void LoadFromJSON(json data) {
         enable                   = data["enable"];
-        updateRegularly          = data["enable"];
-        framesPerUpdate          = data["enable"];
-        maxBounceDepth           = data["enable"];
-        initialRays              = data["enable"];
-        shortenRays              = data["enable"];
-        shortenedRayLength       = data["enable"];
-        ignoreSky                = data["enable"];
-        ignoreGround = data["enable"];
-        maxDistance = data["enable"];
-        sameColour = data["enable"];
-        //lineColour = data["enable"];
+        updateRegularly          = data["updateRegularly"];
+        framesPerUpdate          = data["framesPerUpdate"];
+        maxBounceDepth           = data["maxBounceDepth"];
+        initialRays              = data["initialRays"];
+        shortenRays              = data["shortenRays"];
+        shortenedRayLength       = data["shortenedRayLength"];
+        ignoreSky                = data["ignoreSky"];
+        ignoreGround             = data["ignoreGround"];
+        maxDistance              = data["maxDistance"];
+        sameColour               = data["sameColour"];
+        lineColour               = Vector3f::LoadFromJSON(data["lineColour"]);
     }
 };
 
@@ -119,6 +138,8 @@ public:
 
         if (!file) mScene = Scene::LoadFromFile("scene.scene");
         else mScene = mScene = Scene::LoadFromFile(file);
+
+        LoadSettings();
 
         mSelectedObject = -1;
 
@@ -214,12 +235,41 @@ public:
         }
     }
 
-    void LoadSettingsFromFile(std::string filePath) {
-        std::ifstream file(filePath);
-        json data = json::parse(file);
+    void SaveSettings() {
+        SaveSettingsAs(mScene.GetPath());
+    }
 
-        
+    void SaveSettingsAs(std::string path) {
+        path.replace(path.find(".scene"), sizeof(".scene") - 1, ".editor");
 
+        std::ofstream file(path);
+        if (file.good()) {
+            json data;
+            data["rayVisualizationSettings"] = mRayVisualizationSettings.ToJSON();
+            data["previewRenderSettings"] = mPreviewRenderSettings.ToJSON();
+            data["outputRenderSettings"] = mOutputRenderSettings.ToJSON();
+            file << std::setw(4) << data << std::endl;
+        }
+        else {
+            Error("SaveSettings: failed to save editor settings to " + path);
+        }
+        file.close();
+    }
+
+    void LoadSettings() {
+        std::string path = mScene.GetPath();
+        path.replace(path.find(".scene"), sizeof(".scene") - 1, ".editor");
+
+        std::ifstream file(path);
+        if (file.good()) {
+            json data = json::parse(file);
+            mRayVisualizationSettings.LoadFromJSON(data["rayVisualizationSettings"]);
+            mPreviewRenderSettings.LoadFromJSON(data["previewRenderSettings"]);
+            mOutputRenderSettings.LoadFromJSON(data["outputRenderSettings"]);
+        }
+        else {
+            Error("LoadSettings: No editor settings file found at " + path);
+        }
         file.close();
     }
 
@@ -282,7 +332,10 @@ public:
     }
 
     void Save() {
-        if (mScene.GetName() != "") mScene.Save();
+        if (mScene.GetName() != "") {
+            mScene.Save();
+            SaveSettings();
+        }
         else SaveSceneAs();
     }
 
@@ -290,6 +343,7 @@ public:
         std::string path;
         if (SaveAs("scene", path)) {
             mScene.SaveToFile((path + std::string(".scene")).c_str());
+            SaveSettingsAs(path + std::string(".scene"));
         }
     }
 
@@ -300,6 +354,7 @@ public:
             mScene = mScene.LoadFromFile(path.c_str());
             mRedrawThisFrame = true;
             mLoadedSceneThisFrame = true;
+            LoadSettings();
         }
     }
 
