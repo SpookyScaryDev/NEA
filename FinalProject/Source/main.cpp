@@ -1199,7 +1199,7 @@ public:
                     Vector3f transform;
                     transform.x = mMousePos.x - x;
                     transform.y = y - mMousePos.y;
-                    mScene.camera.MoveInDirection(transform * 0.005);
+                    mScene.camera.MoveInDirection(transform * 0.003);
                     mMousePos = { (float)x, (float)y };
                     mRedrawThisFrame = true;
                 }
@@ -1296,7 +1296,9 @@ public:
         mFrame++;
 
         // Point camera at selected object.
-        if (mLookAtSelected && mSelectedObject >= 0) mScene.camera.LookAt(mScene.GetObjects()[mSelectedObject]->GetPosition());
+        if (mLookAtSelected && mSelectedObject >= 0) {
+            if (mScene.GetObjects()[mSelectedObject]->name != "Ground") mScene.camera.LookAt(mScene.GetObjects()[mSelectedObject]->GetPosition());
+        }
 
         // Update the visualization.
         if (mFrame % mRayVisualizationSettings.framesPerUpdate == 0 && mRayVisualizationSettings.updateRegularly) GenerateVisualization();

@@ -147,7 +147,7 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
             *depthMap = payload.t;
             //if (payload.object->material.materialType == MaterialType::Glass) *depthMap *= -1;
             if (settings.fastMode) return payload.material->colour / payload.t * 4;
-            if (settings.mode == RenderMode::DepthBuffer) return Vector3f(1, 1, 1) / payload.t * 4;
+            if (settings.mode == RenderMode::DepthBuffer) return Vector3f(1, 1, 1) / payload.t * 2;
         }
 
         if (settings.directLightSampling) {
