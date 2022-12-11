@@ -30,6 +30,9 @@ nlohmann::json RenderSettings::ToJSON() {
     data["checkerboard"]        = checkerboard;
     data["directLightSampling"] = directLightSampling;
 
+    data["mode"] = mode;
+    data["fastMode"] = fastMode;
+
     return data;
 }
 
@@ -40,6 +43,9 @@ void RenderSettings::LoadFromJSON(json data) {
     ambientLight        = Vector3f::LoadFromJSON(data["ambientLight"]);
     checkerboard        = data["checkerboard"];
     directLightSampling = data["directLightSampling"];
+
+    mode                = (RenderMode)data["mode"];
+    fastMode            = data["fastMode"];
 }
 
 
@@ -115,9 +121,6 @@ Colour Renderer::GatherDirectLighting(const Scene& scene, const RayPayload& payl
 
             float distance = (toLightPayload.point - payload.point).Magnitude();
 
-            //if (distance == 0)
-            //    printf("%s", std::to_string(distance));
-
             light += obj->material.Emit() * pdf / pdf2;
         }
     }
@@ -142,8 +145,9 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
 
         if (depth == 1) {
             *depthMap = payload.t;
-            if (payload.object->material.materialType == MaterialType::Glass) *depthMap *= -1;
-            //TODO: depthmap return payload.material->colour / payload.t * 2;
+            //if (payload.object->material.materialType == MaterialType::Glass) *depthMap *= -1;
+            if (settings.fastMode) return payload.material->colour / payload.t * 2;
+            if (settings.mode == RenderMode::DepthBuffer) return Vector3f(1, 1, 1) / payload.t * 2;
         }
 
         if (settings.directLightSampling) {
@@ -160,7 +164,7 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
         }
 
         //if (!payload.frontFace) return Vector3f();
-        //return 0.5 * (payload.normal + Vector3f(1, 1, 1));
+        if (settings.mode == RenderMode::Normals) return 0.5 * (payload.normal + Vector3f(1, 1, 1));
         lightNext = false;
         if (payload.material->materialType != MaterialType::Lambertian  && depth == 1) lightNext = true;
 
@@ -168,7 +172,7 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
     }
     else {
         if (depth == 1) {
-            *depthMap = 9999999999999999999;
+            *depthMap = FLT_MAX;
         }
 
         return settings.ambientLight;

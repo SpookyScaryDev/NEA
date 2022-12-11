@@ -12,6 +12,12 @@ struct SDL_Renderer;
 
 namespace Prototype {
 
+enum class RenderMode {
+    RayTraced,
+    DepthBuffer,
+    Normals
+};
+
 struct RenderSettings {
     Vector2f            resolution;
     int                 maxDepth;
@@ -19,6 +25,9 @@ struct RenderSettings {
     Colour              ambientLight;
     bool                checkerboard;
     bool                directLightSampling;
+
+    RenderMode          mode;
+    bool                fastMode;
 
     nlohmann::json      ToJSON();
     void                LoadFromJSON(nlohmann::json data);

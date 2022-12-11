@@ -796,9 +796,34 @@ public:
             ImGui::Begin("Render Settings");
             if (ImGui::BeginTabBar("Render Settings Tab Bar")) {
                 if (ImGui::BeginTabItem("Preview")) {
+                    const char* modes[] = { "Ray Tracer", "Depth Buffer", "Normals" };
+                    // Pass in the preview value visible before opening the combo (it could be anything)
+                    const char* comboText = modes[(int)mPreviewRenderSettings.mode];
+                    if (ImGui::BeginCombo("Rendering Mode", comboText)) {
+                        for (int i = 0; i < IM_ARRAYSIZE(modes); i++) {
+                            bool selected = ((int)mPreviewRenderSettings.mode == i);
+                            if (ImGui::Selectable(modes[i], selected)) {
+                                // Change material type
+                                mPreviewRenderSettings.mode = (RenderMode)i;
+                                mRedrawThisFrame = true;
+                            }
+
+                            if (selected) ImGui::SetItemDefaultFocus();
+                        }
+                        ImGui::EndCombo();
+                    }
+                    mRedrawThisFrame |= ImGui::Checkbox("Fast Mode", &mPreviewRenderSettings.fastMode);
+
+                    ImGui::NewLine();
+
                     mRedrawThisFrame |= ImGui::SliderInt("Max Depth", &mPreviewRenderSettings.maxDepth, 1, 100);
                     mRedrawThisFrame |= ImGui::SliderInt("Samples Per Frame", &mPreviewRenderSettings.samples, 1, 100);
-                    mRedrawThisFrame |= ImGui::ColorEdit3("Ambient Light Colour", (float*)&mPreviewRenderSettings.ambientLight);
+
+                    if (ImGui::ColorEdit3("Ambient Light Colour", (float*)&mPreviewRenderSettings.ambientLight)) {
+                        mRedrawThisFrame = true;
+                        mOutputRenderSettings.ambientLight = mPreviewRenderSettings.ambientLight;
+                    }
+
                     mRedrawThisFrame |= ImGui::Checkbox("Checkerboard", &mPreviewRenderSettings.checkerboard);
                     mRedrawThisFrame |= ImGui::Checkbox("Explicit Light Sampling", &mPreviewRenderSettings.directLightSampling);
                     ImGui::EndTabItem();
@@ -833,6 +858,25 @@ public:
                     }
 
                     if ((!validName || !validDir) && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+
+                    ImGui::NewLine();
+
+                    const char* modes[] = { "Ray Tracer", "Depth Buffer", "Normals" };
+                    // Pass in the preview value visible before opening the combo (it could be anything)
+                    const char* comboText = modes[(int)mPreviewRenderSettings.mode];
+                    if (ImGui::BeginCombo("Rendering Mode", comboText)) {
+                        for (int i = 0; i < IM_ARRAYSIZE(modes); i++) {
+                            bool selected = ((int)mPreviewRenderSettings.mode == i);
+                            if (ImGui::Selectable(modes[i], selected)) {
+                                // Change material type
+                                mPreviewRenderSettings.mode = (RenderMode)i;
+                            }
+
+                            if (selected) ImGui::SetItemDefaultFocus();
+                        }
+                        ImGui::EndCombo();
+                    }
+                    ImGui::Checkbox("Fast Mode", &mPreviewRenderSettings.fastMode);
 
                     ImGui::NewLine();
 
