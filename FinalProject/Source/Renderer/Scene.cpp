@@ -133,6 +133,7 @@ bool Scene::ClosestHit(const Ray& ray, float min, float max, RayPayload& payload
 }
 
 void Scene::UpdateObjects() {
+    camera.Update();
     for each (Object* object in mObjects) {
         object->Update();
     }

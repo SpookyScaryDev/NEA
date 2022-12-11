@@ -147,6 +147,11 @@ public:
         mNewObjectPath = "";
         mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
 
+        mLookAtSelected = true;
+
+        mMouseInViewport = false;
+        mMouseDrag = false;
+
         GenerateVisualization();
     }
 
@@ -522,7 +527,18 @@ public:
         // Camera position
         {
             ImGui::Begin("Camera");
-            mRedrawThisFrame |= ImGui::DragFloat3("Position", (float*)&mScene.camera.position, 0.01);
+            Vector3f position = mScene.camera.GetPosition();
+
+            if (ImGui::DragFloat3("Position", (float*)&position, 0.01)) {
+                mRedrawThisFrame = true;
+                mScene.camera.SetPosition(position);
+            }
+
+            mRedrawThisFrame |= ImGui::Checkbox("Look at selected object", &mLookAtSelected);
+            if (ImGui::Button("Reset view")) {
+                mRedrawThisFrame = true;
+                mScene.camera.LookAt(mScene.camera.GetPosition() + Vector3f(0, 0, -1));
+            }
 
             ImGui::End();
         }
@@ -914,22 +930,9 @@ public:
             // Add the texture
             ImGui::Image((void*)(intptr_t)mOutputTexture->GetRawTexture(), ImVec2(size.x * scale, size.y * scale));
 
-            // The image is clicked
-            if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && ImGui::IsMouseHoveringRect(textureTopLeftInWindow, { textureTopLeftInWindow.x + size.x * scale, textureTopLeftInWindow.y + size.y * scale })) {
-                // Work out which object is being clicked and select it
-                ImVec2 pos = ImGui::GetMousePos();
-                Vector2f relativePos = { (pos.x - textureTopLeftInWindow.x) / (scale * size.x), (pos.y - textureTopLeftInWindow.y) / (scale * size.y) };
-                Vector3f viewportPos = mScene.camera.GetViewportPos(relativePos);
-                Ray ray = Ray(mScene.camera.position, viewportPos);
-                RayPayload payload;
-                if (mScene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
-                    mSelectedObject = mScene.GetObjectID(payload.object);
-                }
-                else {
-                    // De-select
-                    mSelectedObject = -1;
-                }
-            }
+            mMouseInViewport = ImGui::IsWindowHovered();
+            mViewportTopLeft = { textureTopLeftInWindow.x, textureTopLeftInWindow.y };
+            mViewportBottomRight = { textureTopLeftInWindow.x + size.x * scale, textureTopLeftInWindow.y + size.y * scale };
 
             ImGui::End();
             ImGui::PopStyleVar();
@@ -978,6 +981,26 @@ public:
         ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());
     }
 
+    void TrySelectObject() {
+        int x, y;
+        SDL_GetMouseState(&x, &y);
+        if (x >= mViewportTopLeft.x && x <= mViewportBottomRight.x && y >= mViewportTopLeft.y && y <= mViewportBottomRight.y) {
+            // Work out which object is being clicked and select it
+            Vector2f relativePos = { (x - mViewportTopLeft.x) / (mViewportBottomRight.x - mViewportTopLeft.x), (y - mViewportTopLeft.y) / (mViewportBottomRight.y - mViewportTopLeft.y) };
+            Vector3f viewportPos = mScene.camera.GetViewportPos(relativePos);
+            Ray ray = Ray(mScene.camera.GetPosition(), viewportPos);
+            RayPayload payload;
+            if (mScene.ClosestHit(ray, 0.001, FLT_MAX, payload)) {
+                mSelectedObject = mScene.GetObjectID(payload.object);
+                if (mLookAtSelected) mRedrawThisFrame = true;
+            }
+            else {
+                // De-select
+                mSelectedObject = -1;
+            }
+        }
+    }
+
     void DrawRay(Texture* image, Line2D line, Line3D line3d) {
         // Use the Bresenham algorthithm to draw the ray onto the screen.
 
@@ -1015,11 +1038,11 @@ public:
                     Vector3f pos = line3d.start + t * (line3d.end - line3d.start);
 
                     // Only draw if the line is in front of every other object.
-                    if ((pos - mScene.camera.position).Magnitude() < mDepthBufferOld[xCoord][yCoord] || mDepthBufferOld[xCoord][yCoord] < 0) {
+                    if ((pos - mScene.camera.GetPosition()).Magnitude() < mDepthBufferOld[xCoord][yCoord] || mDepthBufferOld[xCoord][yCoord] < 0) {
                         // Alpha blend between the line colour and the image colour.
                         colour = line.colour * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) / 255 * (1 - alpha);
                         // Multiply by the image colour if the object is glass.
-                        if (mDepthBufferOld[xCoord][yCoord] < 0 && (pos - mScene.camera.position).Magnitude() > abs(mDepthBufferOld[xCoord][yCoord]))
+                        if (mDepthBufferOld[xCoord][yCoord] < 0 && (pos - mScene.camera.GetPosition()).Magnitude() > abs(mDepthBufferOld[xCoord][yCoord]))
                             colour = colour * image->GetColourAt({ (float)xCoord, (float)yCoord }) / 255;
                         colour *= 255;
                         image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
@@ -1049,9 +1072,9 @@ public:
                     float t = (Vector2f((float)xCoord, (float)yCoord) - line.start).Magnitude() / (line.end - line.start).Magnitude();
                     Vector3f pos = line3d.start + t * (line3d.end - line3d.start);
 
-                    if ((pos - mScene.camera.position).Magnitude() < mDepthBufferOld[xCoord][yCoord] || mDepthBufferOld[xCoord][yCoord] < 0) {
+                    if ((pos - mScene.camera.GetPosition()).Magnitude() < mDepthBufferOld[xCoord][yCoord] || mDepthBufferOld[xCoord][yCoord] < 0) {
                         colour = line.colour * alpha + image->GetColourAt({ (float)xCoord, (float)yCoord }) / 255 * (1 - alpha);
-                        if (mDepthBufferOld[xCoord][yCoord] < 0 && (pos - mScene.camera.position).Magnitude() > abs(mDepthBufferOld[xCoord][yCoord]))
+                        if (mDepthBufferOld[xCoord][yCoord] < 0 && (pos - mScene.camera.GetPosition()).Magnitude() > abs(mDepthBufferOld[xCoord][yCoord]))
                             colour = colour * image->GetColourAt({ (float)xCoord, (float)yCoord }) / 255;
                         colour *= 255;
                         image->SetColourAt({ (float)xCoord, (float)yCoord }, colour);
@@ -1071,7 +1094,7 @@ public:
                 if (mSelectedObject >= 0) {
                     Vector2f screenPos = { x / mPreviewRenderSettings.resolution.x, y / mPreviewRenderSettings.resolution.y };
                     Vector3f viewportPos = mScene.camera.GetViewportPos(screenPos);
-                    Ray ray = Ray(mScene.camera.position, viewportPos);
+                    Ray ray = Ray(mScene.camera.GetPosition(), viewportPos);
                     Object* selected = mScene.GetObjects()[mSelectedObject];
                     RayPayload payload;
                     mIsSelectedObjectVisible[x][y] = selected->Intersect(ray, 0, FLT_MAX, payload);
@@ -1132,7 +1155,7 @@ public:
                         for (int yOffset = y - 1; yOffset <= y + 1; yOffset++) {
                             if (xOffset >= 0 && xOffset < mPreviewRenderSettings.resolution.x && yOffset >= 0 && yOffset < mPreviewRenderSettings.resolution.y) {
                                 if (!mIsSelectedObjectVisible[xOffset][yOffset]) {
-                                    texture->SetColourAt({ (float)xOffset, (float)yOffset }, { 0, 0, 0 });
+                                    texture->SetColourAt({ (float)xOffset, (float)yOffset }, { 255, 50, 0 });
                                 }
                             }
                         }
@@ -1154,10 +1177,55 @@ public:
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(GetWindow()->GetRawWindow())) {
                 mIsRunning = false;
             }
+            if (event.type == SDL_MOUSEBUTTONUP) {
+                if (mMouseDrag) mMouseDrag = false;
+                else TrySelectObject();
+            }
+            if (event.type == SDL_MOUSEWHEEL) {
+                if (event.wheel.y > 0) mScene.camera.MoveInDirection({ 0, 0, 0.6 });
+                else mScene.camera.MoveInDirection({ 0, 0, -0.6 });
+                mRedrawThisFrame = true;
+            }
+            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_MIDDLE && mMouseInViewport) {
+                int x, y;
+                SDL_GetMouseState(&x, &y);
+                mMousePos = { (float)x, (float)y };
+            }
+            if (event.type == SDL_MOUSEMOTION && event.button.button == SDL_BUTTON_MIDDLE) {
+                if ((!mMouseDrag && mMouseInViewport) || mMouseDrag) {
+                    mMouseDrag = true;
+                    int x, y;
+                    SDL_GetMouseState(&x, &y);
+                    Vector3f transform;
+                    transform.x = mMousePos.x - x;
+                    transform.y = y - mMousePos.y;
+                    mScene.camera.MoveInDirection(transform * 0.005);
+                    mMousePos = { (float)x, (float)y };
+                    mRedrawThisFrame = true;
+                }
+            }
         }
 
         // Keyboard shortcuts.
         const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
+
+        if (keyboardState[SDL_SCANCODE_W]) {
+            mScene.camera.MoveInDirection({ 0, 0, 0.1 });
+            mRedrawThisFrame = true;
+        }
+        if (keyboardState[SDL_SCANCODE_S]) {
+            mScene.camera.MoveInDirection({ 0, 0, -0.1 });
+            mRedrawThisFrame = true;
+        }
+        if (keyboardState[SDL_SCANCODE_A]) {
+            mScene.camera.MoveInDirection({ -0.05, 0, 0 });
+            mRedrawThisFrame = true;
+        }
+        if (keyboardState[SDL_SCANCODE_D]) {
+            mScene.camera.MoveInDirection({ 0.05, 0, 0 });
+            mRedrawThisFrame = true;
+        }
+
         if (keyboardState[SDL_SCANCODE_LCTRL] && keyboardState[SDL_SCANCODE_LSHIFT] && keyboardState[SDL_SCANCODE_S]) {
             SaveSceneAs();
         }
@@ -1175,7 +1243,7 @@ public:
     void DrawRayVisualization() {
         for each (Line3D line in mRayVisualizationLines) {
             // Make sure line is visible.
-            if ((line.start - mScene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0 || (line.end - mScene.camera.position).Dot(Vector3f(0, 0, -1)) <= 0) continue;
+            if ((line.start - mScene.camera.GetPosition()).Dot(Vector3f(0, 0, -1)) <= 0 || (line.end - mScene.camera.GetPosition()).Dot(Vector3f(0, 0, -1)) <= 0) continue;
 
             // Calculate 2d line position.
             Line2D line2d = { mScene.camera.GetScreenPos(line.start) * mPreviewRenderSettings.resolution, mScene.camera.GetScreenPos(line.end) * mPreviewRenderSettings.resolution, line.colour, line.startAlpha, line.endAlpha };
@@ -1226,6 +1294,9 @@ public:
         GetWindow()->SetTitle(title.c_str());
 
         mFrame++;
+
+        // Point camera at selected object.
+        if (mLookAtSelected && mSelectedObject >= 0) mScene.camera.LookAt(mScene.GetObjects()[mSelectedObject]->GetPosition());
 
         // Update the visualization.
         if (mFrame % mRayVisualizationSettings.framesPerUpdate == 0 && mRayVisualizationSettings.updateRegularly) GenerateVisualization();
@@ -1310,6 +1381,15 @@ private:
     int           mNewObjectType;
     std::string   mNewObjectPath;
     int           mSelectedObject;
+
+    bool       mLookAtSelected;
+
+    bool       mMouseInViewport;
+    Vector2f   mViewportTopLeft;
+    Vector2f   mViewportBottomRight;
+
+    bool       mMouseDrag;
+    Vector2f   mMousePos;
 
     RayVisualizationSettings  mRayVisualizationSettings;
     std::vector<Line3D>       mRayVisualizationLines;

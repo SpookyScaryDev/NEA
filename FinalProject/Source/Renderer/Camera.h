@@ -18,12 +18,22 @@ public:
 	Vector3f            GetViewportPos(Vector2f screenPos) const;  // Translates from pixel coordinates to their location in 3d space.
 	Vector2f            GetScreenPos(Vector3f viewportPos) const;
 
-	Vector3f            position;
+	void                Update();
+
+	void                MoveInDirection(Vector3f transform);
+	void                LookAt(Vector3f target);
+
+	Vector3f            GetPosition() const;
+	void                SetPosition(const Vector3f& position);
 
 private:
+	bool                mDirty;
+	Vector3f            mPosition;
+
 	float               mAspectRatio;
 	float               mFocalLength;
 
+	Vector3f            mForward;
 	Vector3f            mViewportBottomLeft;
 	Vector3f            mViewportHorizontal;
 	Vector3f            mViewportVertical;

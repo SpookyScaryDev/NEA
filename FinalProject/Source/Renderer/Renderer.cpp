@@ -146,8 +146,8 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
         if (depth == 1) {
             *depthMap = payload.t;
             //if (payload.object->material.materialType == MaterialType::Glass) *depthMap *= -1;
-            if (settings.fastMode) return payload.material->colour / payload.t * 2;
-            if (settings.mode == RenderMode::DepthBuffer) return Vector3f(1, 1, 1) / payload.t * 2;
+            if (settings.fastMode) return payload.material->colour / payload.t * 4;
+            if (settings.mode == RenderMode::DepthBuffer) return Vector3f(1, 1, 1) / payload.t * 4;
         }
 
         if (settings.directLightSampling) {
@@ -201,7 +201,7 @@ void Renderer::RenderStrip(Scene scene, Colour** image, float** depthMap, const 
 
                     Vector3f viewportPosRand = scene.camera.GetViewportPos(screenPos);
                     viewportPosRand.Normalize();
-                    Ray rayRand = Ray(scene.camera.position, viewportPosRand);
+                    Ray rayRand = Ray(scene.camera.GetPosition(), viewportPosRand);
 
 
                     colour += TraceRay(scene, &depthMap[x][y], rayRand, 0, false, settings, rnd);
