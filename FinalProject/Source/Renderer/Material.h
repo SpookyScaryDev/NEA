@@ -16,9 +16,22 @@ enum class MaterialType {
     Glass
 };
 
+enum class MaterialPreset {
+    Paper,
+    Plastic,
+    Metal,
+    Glass,
+    FrostedGlass,
+    Light
+};
+
 class Material {
 public:
                         Material(MaterialType type = MaterialType::Lambertian, Colour colour = Vector3f(0.9, 0.9, 0.9), float roughness = 1, float refractiveIndex = 1.5, float emitted = 0);
+
+    bool                operator==(const Material& material) const;
+
+    static Material     LoadFromPreset(MaterialPreset preset);
 
     static Material     LoadFromJSON(nlohmann::json data);
     nlohmann::json      ToJSON();

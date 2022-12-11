@@ -136,7 +136,9 @@ public:
         mOutputTexture = new Texture(mInternalWidth, mInternalHeight);
         SDL_SetTextureScaleMode(mOutputTexture->GetRawTexture(), SDL_ScaleModeBest); // TODO: Put in Texture class
 
-        if (!file) mScene = Scene::LoadFromFile("scene.scene");
+        mDefaultCamera = Camera(mAspectRatio, 4, Vector3f());
+
+        if (!file) New();
         else mScene = mScene = Scene::LoadFromFile(file);
 
         LoadSettings();
@@ -325,7 +327,8 @@ public:
 
     void New() {
         mRedrawThisFrame = true;
-        mScene = Scene();
+        mLoadedSceneThisFrame = true;
+        mScene = mScene.LoadFromFile("Default/default.scene");
 
         mSelectedObject = -1;
 
@@ -333,11 +336,13 @@ public:
         mNewObjectPath = "";
         mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
 
+        LoadSettings();
+
         GenerateVisualization();
     }
 
     void Save() {
-        if (mScene.GetName() != "") {
+        if (mScene.GetName() != "default") {
             mScene.Save();
             SaveSettings();
         }
@@ -559,7 +564,7 @@ public:
                 ImGui::InputText("Name", nameBuffer, 100);
                 mNewObjectName = nameBuffer;
 
-                const char* objectTypes[] = { "Sphere", "Cube", "3D Model", "Diverging Lens", "Converging Lens" };
+                const char* objectTypes[] = { "Sphere", "Cube", "Prism", "Diverging Lens", "Converging Lens", "3D Model" };
                 if (ImGui::BeginCombo("Material Type", objectTypes[mNewObjectType])) {
                     for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
                         const bool selected = (mNewObjectType == i);
@@ -597,10 +602,13 @@ public:
                     Object* object;
 
                     if (objectTypes[mNewObjectType] == "Sphere") {
-                        object = (Object*) new Sphere(Vector3f(), 0.5, Material());
+                        object = (Object*) new Sphere(Vector3f(), 1, Material());
                     }
                     else if (objectTypes[mNewObjectType] == "Cube") {
-                        object = (Object*) new Mesh({ 0, 0, 0 }, "Cube.obj", Material());
+                        object = (Object*) new Mesh({ 0, 0, 0 }, "Models/Cube.obj", Material());
+                    }
+                    else if (objectTypes[mNewObjectType] == "Prism") {
+                        object = (Object*) new Mesh({ 0, 0, 0 }, "Models/Prism.obj", Material());
                     }
                     else if (objectTypes[mNewObjectType] == "3D Model") {
                         object = (Object*) new Mesh({ 0, 0, 0 }, mNewObjectPath.c_str(), Material());
@@ -611,6 +619,8 @@ public:
                     else if (objectTypes[mNewObjectType] == "Converging Lens") {
                         object = (Object*) new ConvergingLens({ 0, 0, 0 }, 0.5, Material());
                     }
+
+                    object->material = Material::LoadFromPreset(MaterialPreset::Plastic);
 
                     mRedrawThisFrame = true;
                     mScene.AddObject(mNewObjectName.c_str(), object);
@@ -777,6 +787,27 @@ public:
             if (mSelectedObject >= 0) {
                 Object* obj = mScene.GetObjects()[mSelectedObject];
                 Material* material = &obj->material;
+
+                const char* presets[] = { "Paper", "Plastic", "Metal", "Glass", "FrostedGlass", "Light" };
+                std::string currentPreset = "";
+                for (int i = 0; i < IM_ARRAYSIZE(presets); i++) {
+                    if (*material == Material::LoadFromPreset((MaterialPreset)i)) {
+                        currentPreset = presets[i];
+                    }
+                }
+                if (currentPreset == "") currentPreset = "Custom";
+                if (ImGui::BeginCombo("Preset", currentPreset.c_str())) {
+                    for (int i = 0; i < IM_ARRAYSIZE(presets); i++) {
+                        bool selected = ((int)material->materialType == i);
+                        if (ImGui::Selectable(presets[i], selected)) {
+                            // Change material type
+                            *material = Material::LoadFromPreset((MaterialPreset)i);
+                            mRedrawThisFrame = true;
+                        }
+                        if (selected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
 
                 const char* materials[] = { "Lambertian", "Specular", "Glass" };
                 // Pass in the preview value visible before opening the combo (it could be anything)
@@ -1177,9 +1208,11 @@ public:
             if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(GetWindow()->GetRawWindow())) {
                 mIsRunning = false;
             }
+            if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+                if (mMouseInViewport) TrySelectObject();
+            }
             if (event.type == SDL_MOUSEBUTTONUP) {
                 if (mMouseDrag) mMouseDrag = false;
-                else TrySelectObject();
             }
             if (event.type == SDL_MOUSEWHEEL) {
                 if (event.wheel.y > 0) mScene.camera.MoveInDirection({ 0, 0, 0.6 });
@@ -1199,7 +1232,7 @@ public:
                     Vector3f transform;
                     transform.x = mMousePos.x - x;
                     transform.y = y - mMousePos.y;
-                    mScene.camera.MoveInDirection(transform * 0.003);
+                    mScene.camera.MoveInDirection(transform * 0.005);
                     mMousePos = { (float)x, (float)y };
                     mRedrawThisFrame = true;
                 }
@@ -1287,10 +1320,10 @@ public:
     void Update(float deltaTime) {
         // Update the window title to show the name of the scene
         std::string title = "Ray Tracing Optics Simulator: ";
-        if (mScene.GetName() != "") title += mScene.GetName();
+        if (mScene.GetName() != "default") title += mScene.GetName();
         else title += "unnamed";
         // Add a * if the file has unsaved changes.
-        if (mScene.IsModified()) title += "*";
+        if (mScene.IsModified() || mScene.GetName() == "default") title += "*";
         GetWindow()->SetTitle(title.c_str());
 
         mFrame++;
@@ -1357,6 +1390,8 @@ private:
     int        mInternalWidth;
     int        mInternalHeight;
     float      mAspectRatio;
+
+    Camera     mDefaultCamera;
 
     int        mFrame = 0;
     float      mRendererFps;

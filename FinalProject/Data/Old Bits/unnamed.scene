@@ -1,0 +1,112 @@
+{
+    "camera": {
+        "aspectRatio": 2.0,
+        "focalLength": 4.0,
+        "position": [
+            4.192360877990723,
+            5.424533367156982,
+            21.32269287109375
+        ]
+    },
+    "objects": [
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.4203540086746216,
+                    0.4203540086746216,
+                    0.4203540086746216
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 1.0,
+                "type": "lambertian"
+            },
+            "name": "Ground",
+            "position": [
+                0.0,
+                -1001.0,
+                0.0
+            ],
+            "radius": 1000.0,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1000.0,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.8999999761581421,
+                    0.8999999761581421,
+                    0.8999999761581421
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 1.0,
+                "type": "lambertian"
+            },
+            "name": "Cube",
+            "path": "Models/Cube.obj",
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "mesh"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "emitted": 63.29999923706055,
+                "refractiveIndex": 1.5,
+                "roughness": 1.0,
+                "type": "lambertian"
+            },
+            "name": "Light",
+            "position": [
+                -2.200000047683716,
+                5.260000228881836,
+                0.0
+            ],
+            "radius": 0.5,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                0.5,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        }
+    ]
+}

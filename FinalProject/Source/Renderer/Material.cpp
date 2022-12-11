@@ -23,6 +23,62 @@ Material::Material(MaterialType type, Colour colour, float roughness, float refr
     refractiveIndex(refractiveIndex),
     emitted(emitted) {}
 
+bool Material::operator==(const Material& material) const {
+    return
+        material.colour == colour &&
+        material.emitted == emitted &&
+        material.materialType == materialType &&
+        material.refractiveIndex == material.refractiveIndex &&
+        material.roughness == roughness;
+}
+
+Material Material::LoadFromPreset(MaterialPreset preset) {
+    Material material;
+
+    switch (preset){
+
+    case Prototype::MaterialPreset::Paper:
+        material.materialType = MaterialType::Lambertian;
+        material.colour = Vector3f(1, 1, 1);
+        break;
+
+    case Prototype::MaterialPreset::Plastic:
+        material.materialType = MaterialType::Glossy;
+        material.colour = Vector3f(1, 0.2, 0.2);
+        material.roughness = 950;
+        break;
+
+    case Prototype::MaterialPreset::Metal:
+        material.materialType = MaterialType::Glossy;
+        material.colour = Vector3f(0.9, 0.9, 0.9);
+        material.roughness = 0;
+        break;
+
+    case Prototype::MaterialPreset::Glass:
+        material.materialType = MaterialType::Glass;
+        material.colour = Vector3f(1, 1, 1);
+        material.roughness = 0;
+        break;
+
+    case Prototype::MaterialPreset::FrostedGlass:
+        material.materialType = MaterialType::Glass;
+        material.colour = Vector3f(1, 1, 1);
+        material.roughness = 20;
+        break;
+
+    case Prototype::MaterialPreset::Light:
+        material.materialType = MaterialType::Lambertian;
+        material.colour = Vector3f(1, 1, 1);
+        material.emitted = 20;
+        break;
+
+    default:
+        break;
+    }
+
+    return material;
+}
+
 Material Material::LoadFromJSON(nlohmann::json data) {
     Material material;
 

@@ -26,8 +26,6 @@ void Camera::Create(float aspectRatio, float focalLength, Vector3f pos) {
 	mViewportVertical = { 0, 2, 0 };
 	mViewportHorizontal = { 2 * mAspectRatio, 0, 0 };
 	mViewportBottomLeft = mViewportHorizontal / -2 - mViewportVertical / 2 + Vector3f(0, 0, -mFocalLength);
-
-	mDirty = true;
 }
 
 Camera Camera::LoadFromJSON(json data) {
