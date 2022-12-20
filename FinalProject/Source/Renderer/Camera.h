@@ -23,8 +23,12 @@ public:
 	void                MoveInDirection(Vector3f transform);
 	void                LookAt(Vector3f target);
 
+	Vector3f            GetDirection() const;
+
 	Vector3f            GetPosition() const;
 	void                SetPosition(const Vector3f& position);
+
+	void                SetAspectRatio(float aspectRatio);
 
 private:
 	bool                mDirty;

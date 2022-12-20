@@ -23,9 +23,9 @@ void Camera::Create(float aspectRatio, float focalLength, Vector3f pos) {
 	mPosition = pos;
 
 	mForward = Vector3f(0, 0, -1);
-	mViewportVertical = { 0, 2, 0 };
-	mViewportHorizontal = { 2 * mAspectRatio, 0, 0 };
-	mViewportBottomLeft = mViewportHorizontal / -2 - mViewportVertical / 2 + Vector3f(0, 0, -mFocalLength);
+	mViewportVertical = { 0, 1, 0 };
+	mViewportHorizontal = { mAspectRatio, 0, 0 };
+	mViewportBottomLeft = mFocalLength * mForward - 0.5 * mViewportHorizontal - 0.5 * mViewportVertical;
 }
 
 Camera Camera::LoadFromJSON(json data) {
@@ -49,20 +49,27 @@ Vector3f Camera::GetViewportPos(Vector2f screenPos) const {
 
 Vector2f Camera::GetScreenPos(Vector3f point) const {
 	Vector3f toPoint = point - mPosition;
-	Vector3f viewportPlaneNormal  = mViewportBottomLeft + 0.5 * mViewportVertical + 0.5 * mViewportHorizontal;
+	Vector3f viewportPlaneNormal = mForward;
 
 	float d = viewportPlaneNormal.Dot(mViewportBottomLeft + mPosition);
 
 	float lambda = (d - viewportPlaneNormal.Dot(mPosition)) / (viewportPlaneNormal.Dot(toPoint));
 
-	Vector3f posOnViewport = mPosition + lambda * toPoint;
+	Vector3f posOnViewport = lambda * toPoint;
 
-	Vector2f screenPos = Vector2f((posOnViewport.x - (mViewportBottomLeft.x + mPosition.x)) / mViewportHorizontal.x,
-		                          1-((posOnViewport.y - (mViewportBottomLeft.y + mPosition.y)) / mViewportVertical.y));
+	Vector2f screenPos1 = Vector2f((posOnViewport.x - (mViewportBottomLeft.x)) / mViewportHorizontal.x,
+		                          1-((posOnViewport.y - (mViewportBottomLeft.y)) / mViewportVertical.y));
 
-	//Vector3f posOnViewport2 = GetViewportPos(screenPos);
+	float det = 1 / (mViewportHorizontal.x * mViewportVertical.y - mViewportHorizontal.y * mViewportVertical.x);
+	Vector2f screenPos;
+	Vector3f pos = posOnViewport - mViewportBottomLeft;
+	screenPos.x = ( ( mViewportVertical.y * pos.x ) * det - (pos.y * mViewportVertical.x ) * det );
+	screenPos.y = 1 - ( - (mViewportHorizontal.y * pos.x ) * det + (pos.y * mViewportHorizontal.x ) * det );
+
+	Vector3f posOnViewport2 = GetViewportPos(screenPos);
 
 	//printf("(%f, %f, %f) (%f, %f, %f)\n", posOnViewport.x, posOnViewport.y, posOnViewport.z, posOnViewport2.x, posOnViewport2.y, posOnViewport2.z);
+	//printf("(%f, %f) (%f, %f)\n", screenPos1.x, screenPos1.y, screenPos.x, screenPos.y);
 
 	return screenPos;
 }
@@ -89,13 +96,17 @@ void Camera::LookAt(Vector3f target) {
 
 	mViewportHorizontal = mForward.Cross(Vector3f(0, 1, 0));
 	mViewportHorizontal.Normalize();
-	mViewportHorizontal = mViewportHorizontal * 2 * mAspectRatio;
+	mViewportHorizontal = mViewportHorizontal * mAspectRatio;
 
 	mViewportVertical = mViewportHorizontal.Cross(mForward);
 	mViewportVertical.Normalize();
-	mViewportVertical = mViewportVertical * 2;
+	mViewportVertical = mViewportVertical;
 
 	mViewportBottomLeft = mFocalLength * mForward - 0.5 * mViewportHorizontal - 0.5 * mViewportVertical;
+}
+
+Vector3f Camera::GetDirection() const {
+	return mForward;
 }
 
 Vector3f Camera::GetPosition() const {
@@ -105,6 +116,13 @@ Vector3f Camera::GetPosition() const {
 void Camera::SetPosition(const Vector3f& position) {
 	mPosition = position;
 	mDirty = true;
+}
+
+void Camera::SetAspectRatio(float aspectRatio) {
+	mAspectRatio = aspectRatio;
+	mViewportHorizontal.Normalize();
+	mViewportHorizontal = mViewportHorizontal * mAspectRatio;
+	mViewportBottomLeft = mFocalLength * mForward - 0.5 * mViewportHorizontal - 0.5 * mViewportVertical;
 }
 
 }

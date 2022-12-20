@@ -29,6 +29,7 @@ nlohmann::json RenderSettings::ToJSON() {
     data["ambientLight"]        = ambientLight.ToJSON();
     data["checkerboard"]        = checkerboard;
     data["directLightSampling"] = directLightSampling;
+    data["numThreads"]          = numThreads;
 
     data["mode"] = mode;
     data["fastMode"] = fastMode;
@@ -43,6 +44,8 @@ void RenderSettings::LoadFromJSON(json data) {
     ambientLight        = Vector3f::LoadFromJSON(data["ambientLight"]);
     checkerboard        = data["checkerboard"];
     directLightSampling = data["directLightSampling"];
+
+    if (data.contains("numThreads")) numThreads = data["numThreads"];
 
     mode                = (RenderMode)data["mode"];
     fastMode            = data["fastMode"];
@@ -146,8 +149,8 @@ Colour Renderer::TraceRay(Scene& scene, float* depthMap, const Ray& ray, int dep
         if (depth == 1) {
             *depthMap = payload.t;
             //if (payload.object->material.materialType == MaterialType::Glass) *depthMap *= -1;
-            if (settings.fastMode) return payload.material->colour / payload.t * 10;
-            if (settings.mode == RenderMode::DepthBuffer) return Vector3f(1, 1, 1) / payload.t * 2;
+            if (settings.fastMode) return payload.material->colour / payload.t * 20;
+            if (settings.mode == RenderMode::DepthBuffer) return Vector3f(1, 1, 1) / payload.t * 20;
         }
 
         if (settings.directLightSampling) {
@@ -227,7 +230,7 @@ void Renderer::RenderStrip(Scene scene, Colour** image, float** depthMap, const 
 }
 
 Colour** Renderer::RenderScene(Scene scene, Colour** image, float** depthMap, const RenderSettings& settings, int frame) {
-    int strips = 10;
+    int strips = settings.numThreads;
     std::vector<std::thread> threads;
 
     int size = settings.resolution.x / strips;

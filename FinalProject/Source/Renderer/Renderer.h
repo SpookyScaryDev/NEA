@@ -25,6 +25,7 @@ struct RenderSettings {
     Colour              ambientLight;
     bool                checkerboard;
     bool                directLightSampling;
+    int                 numThreads;
 
     RenderMode          mode;
     bool                fastMode;

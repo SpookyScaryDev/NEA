@@ -115,6 +115,7 @@ public:
         mPreviewRenderSettings.ambientLight = Vector3f(1, 1, 1);
         mPreviewRenderSettings.checkerboard = false;
         mPreviewRenderSettings.directLightSampling = true;
+        mPreviewRenderSettings.numThreads = 10;
 
         mOutputRenderSettings = RenderSettings();
         mOutputRenderSettings.resolution = { (float)mInternalWidth * 10, (float)mInternalHeight * 10};
@@ -123,6 +124,7 @@ public:
         mOutputRenderSettings.ambientLight = Vector3f(1, 1, 1);
         mOutputRenderSettings.checkerboard = true;
         mOutputRenderSettings.directLightSampling = false;
+        mOutputRenderSettings.numThreads = 10;
 
         mRedrawThisFrame = false;
         mLoadedSceneThisFrame = true;
@@ -620,7 +622,7 @@ public:
                         object = (Object*) new ConvergingLens({ 0, 0, 0 }, 0.5, Material());
                     }
 
-                    object->material = Material::LoadFromPreset(MaterialPreset::Plastic);
+                    object->material = Material::LoadFromPreset(MaterialPreset::Paper);
 
                     mRedrawThisFrame = true;
                     mScene.AddObject(mNewObjectName.c_str(), object);
@@ -662,7 +664,10 @@ public:
                 sprintf(buf, (std::string("##object_id_") + std::to_string(mScene.GetObjectID(obj))).c_str(), n + 1);
 
                 // Set currently selected object.
-                if (ImGui::Selectable(buf, mSelectedObject == n)) mSelectedObject = n;
+                if (ImGui::Selectable(buf, mSelectedObject == n)) {
+                    mSelectedObject = n;
+                    if (mLookAtSelected) mRedrawThisFrame = true;
+                }
 
                 // Draw label
                 ImGui::SameLine();
@@ -865,6 +870,7 @@ public:
 
                     mRedrawThisFrame |= ImGui::SliderInt("Max Depth", &mPreviewRenderSettings.maxDepth, 1, 100);
                     mRedrawThisFrame |= ImGui::SliderInt("Samples Per Frame", &mPreviewRenderSettings.samples, 1, 100);
+                    mRedrawThisFrame |= ImGui::SliderInt("Threads", &mPreviewRenderSettings.numThreads, 1, 100);
 
                     if (ImGui::ColorEdit3("Ambient Light Colour", (float*)&mPreviewRenderSettings.ambientLight)) {
                         mRedrawThisFrame = true;
@@ -927,8 +933,15 @@ public:
 
                     ImGui::NewLine();
 
+                    int* res = new int[2] { (int)mOutputRenderSettings.resolution.x, (int)mOutputRenderSettings.resolution.y };
+                    ImGui::InputInt2("Resolution", res);
+                    if (res[0] > 0) mOutputRenderSettings.resolution.x = res[0];
+                    if (res[1] > 0) mOutputRenderSettings.resolution.y = res[1];
+                    delete res;
+
                     ImGui::SliderInt("Max Depth", &mOutputRenderSettings.maxDepth, 1, 100);
                     ImGui::SliderInt("Samples Per Frame", &mOutputRenderSettings.samples, 1, 100);
+                    ImGui::SliderInt("Threads", &mPreviewRenderSettings.numThreads, 1, 100);
                     ImGui::ColorEdit3("Ambient Light Colour", (float*)&mOutputRenderSettings.ambientLight);
                     ImGui::Checkbox("Checkerboard", &mOutputRenderSettings.checkerboard);
                     ImGui::Checkbox("Explicit Light Sampling", &mOutputRenderSettings.directLightSampling);
@@ -1214,9 +1227,9 @@ public:
             if (event.type == SDL_MOUSEBUTTONUP) {
                 if (mMouseDrag) mMouseDrag = false;
             }
-            if (event.type == SDL_MOUSEWHEEL) {
+            if (event.type == SDL_MOUSEWHEEL && mMouseInViewport) {
                 if (event.wheel.y > 0) mScene.camera.MoveInDirection({ 0, 0, 0.6 });
-                else mScene.camera.MoveInDirection({ 0, 0, -0.6 });
+                else mScene.camera.MoveInDirection({ 0, 0, -0.8 });
                 mRedrawThisFrame = true;
             }
             if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_MIDDLE && mMouseInViewport) {
@@ -1232,7 +1245,7 @@ public:
                     Vector3f transform;
                     transform.x = mMousePos.x - x;
                     transform.y = y - mMousePos.y;
-                    mScene.camera.MoveInDirection(transform * 0.005);
+                    mScene.camera.MoveInDirection(transform * 0.02);
                     mMousePos = { (float)x, (float)y };
                     mRedrawThisFrame = true;
                 }
@@ -1243,19 +1256,19 @@ public:
         const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
 
         if (keyboardState[SDL_SCANCODE_W]) {
-            mScene.camera.MoveInDirection({ 0, 0, 0.1 });
+            mScene.camera.MoveInDirection({ 0, 0, 0.6 });
             mRedrawThisFrame = true;
         }
         if (keyboardState[SDL_SCANCODE_S]) {
-            mScene.camera.MoveInDirection({ 0, 0, -0.1 });
+            mScene.camera.MoveInDirection({ 0, 0, -0.6 });
             mRedrawThisFrame = true;
         }
         if (keyboardState[SDL_SCANCODE_A]) {
-            mScene.camera.MoveInDirection({ -0.05, 0, 0 });
+            mScene.camera.MoveInDirection({ -0.3, 0, 0 });
             mRedrawThisFrame = true;
         }
         if (keyboardState[SDL_SCANCODE_D]) {
-            mScene.camera.MoveInDirection({ 0.05, 0, 0 });
+            mScene.camera.MoveInDirection({ 0.3, 0, 0 });
             mRedrawThisFrame = true;
         }
 
@@ -1276,7 +1289,7 @@ public:
     void DrawRayVisualization() {
         for each (Line3D line in mRayVisualizationLines) {
             // Make sure line is visible.
-            if ((line.start - mScene.camera.GetPosition()).Dot(Vector3f(0, 0, -1)) <= 0 || (line.end - mScene.camera.GetPosition()).Dot(Vector3f(0, 0, -1)) <= 0) continue;
+            if ((line.start - mScene.camera.GetPosition()).Dot(mScene.camera.GetDirection()) <= 0 || (line.end - mScene.camera.GetPosition()).Dot(mScene.camera.GetDirection()) <= 0) continue;
 
             // Calculate 2d line position.
             Line2D line2d = { mScene.camera.GetScreenPos(line.start) * mPreviewRenderSettings.resolution, mScene.camera.GetScreenPos(line.end) * mPreviewRenderSettings.resolution, line.colour, line.startAlpha, line.endAlpha };
@@ -1293,6 +1306,9 @@ public:
     }
 
     void RenderToImage() {
+        float aspectRatio = mOutputRenderSettings.resolution.x / mOutputRenderSettings.resolution.y;
+        mScene.camera.SetAspectRatio(aspectRatio);
+
         Colour** output = new Colour * [mOutputRenderSettings.resolution.x];
         float** outputDepth = new float * [mOutputRenderSettings.resolution.x];
         for (int i = 0; i < mOutputRenderSettings.resolution.x; i++) {
@@ -1315,6 +1331,7 @@ public:
         if (mOpenFileOnComplete)      ShellExecuteA(NULL, "open", (mOutputImageDirectory + "\\" + mOutputImageName + ".bmp").c_str(), NULL, NULL, SW_SHOWDEFAULT);
 #endif // WINDOWS
 
+        mScene.camera.SetAspectRatio(mAspectRatio);
     }
 
     void Update(float deltaTime) {
