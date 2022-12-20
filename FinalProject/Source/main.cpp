@@ -616,7 +616,7 @@ public:
                         object = (Object*) new Mesh({ 0, 0, 0 }, mNewObjectPath.c_str(), Material());
                     }
                     else if (objectTypes[mNewObjectType] == "Diverging Lens") {
-                        object = (Object*) new DivergingLens({ 0, 0, 0 }, 0.1, 2, Material());
+                        object = (Object*) new DivergingLens({ 0, 0, 0 }, 0.11, 1.48, Material());
                     }
                     else if (objectTypes[mNewObjectType] == "Converging Lens") {
                         object = (Object*) new ConvergingLens({ 0, 0, 0 }, 0.5, Material());
