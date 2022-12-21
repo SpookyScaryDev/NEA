@@ -1,6 +1,7 @@
 #include "Vector3f.h"
 
 #include <math.h>
+#include <sstream>
 #include <Error.h>
 
 #include <nlohmann/json.hpp>
@@ -11,6 +12,17 @@ namespace Prototype {
 
 Vector3f::Vector3f(float fx, float fy, float fz) :
     x(fx), y(fy), z(fz) {}
+
+std::string Vector3f::ToString() const {
+    std::stringstream stream;
+    stream << "(";
+    stream << std::setprecision(3) << x << ", ";
+    stream << std::setprecision(3) << y << ", ";
+    stream << std::setprecision(3) << z;
+    stream << ")";
+
+    return stream.str();
+}
 
 Vector3f Vector3f::LoadFromJSON(json data) {
     Vector3f vector;
@@ -129,11 +141,6 @@ bool Vector3f::operator!=(const Vector3f& vector) const {
 
 Vector3f operator*(const float scalar, const Vector3f& vector) {
     return vector * scalar;
-}
-
-Vector3f operator/(const float scalar, const Vector3f& vector) {
-    ASSERT(scalar != 0, "Tried to divide a vector by 0!");
-    return vector / scalar;
 }
 
 }

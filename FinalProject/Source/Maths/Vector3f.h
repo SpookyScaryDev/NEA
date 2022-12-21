@@ -8,6 +8,8 @@ class Vector3f {
 public:
                         Vector3f(float fx = 0.0, float fy = 0.0, float fz = 0.0);
 
+    std::string         ToString() const;
+
     static Vector3f     LoadFromJSON(nlohmann::json data);
     nlohmann::json      ToJSON();
 
@@ -42,7 +44,6 @@ public:
 };
 
 Vector3f     operator*(const float scalar, const Vector3f& vector);
-Vector3f     operator/(const float scalar, const Vector3f& vector);
 
 typedef Vector3f Colour;
 

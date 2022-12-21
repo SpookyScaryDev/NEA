@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include "nlohmann/json.hpp"
 
 namespace Prototype {
@@ -7,6 +8,8 @@ namespace Prototype {
 class Vector2f {
 public:
                         Vector2f(float fx = 0.0, float fy = 0.0);
+
+    std::string         ToString() const;
 
     static Vector2f     LoadFromJSON(nlohmann::json data);
     nlohmann::json      ToJSON();
@@ -41,6 +44,5 @@ public:
 };
 
 Vector2f     operator*(const float scalar, const Vector2f& vector);
-Vector2f     operator/(const float scalar, const Vector2f& vector);
 
 }

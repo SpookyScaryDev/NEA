@@ -173,6 +173,7 @@ public:
         ImGui_ImplSDLRenderer_Init(GetRenderer()->GetRawRenderer());
 
         io.Fonts->AddFontFromFileTTF("Roboto-Regular.ttf", 15.0f);
+        mMonoFont = io.Fonts->AddFontDefault();
 
         SetImGuiStyle(mDarkMode);
     }
@@ -482,6 +483,86 @@ public:
         }
     }
 
+    void RunTests() {
+        // 2D vector tests
+        ImGui::Text("2D Vector tests");
+
+        Vector2f v2f1 = { 2, 4.3 };
+        Vector2f v2f2 = { 0, -3 };
+
+        ImGui::Text(" Adding 2D vectors:                    ");
+        ImGui::SameLine();
+        ImGui::Text((v2f1.ToString() + " + " + v2f2.ToString() + " = " + (v2f1 + v2f2).ToString()).c_str());
+
+        ImGui::Text(" Subtracting 2D vectors:               ");
+        ImGui::SameLine();
+        ImGui::Text((v2f1.ToString() + " - " + v2f2.ToString() + " = " + (v2f1 - v2f2).ToString()).c_str());
+
+        ImGui::Text(" Multiplying 2D vectors by a scalar:   ");
+        ImGui::SameLine();
+        ImGui::Text(("2 * " + v2f2.ToString() + " = " + (2 * v2f2).ToString()).c_str());
+
+        ImGui::Text(" Dividing 2D vectors by a scalar:      ");
+        ImGui::SameLine();
+        ImGui::Text((v2f2.ToString() + " / 2 = " + (v2f2 / 2).ToString()).c_str());
+
+        ImGui::Text(" Dotting 2D vectors:                   ");
+        ImGui::SameLine();
+        ImGui::Text((v2f1.ToString() + " . " + v2f2.ToString() + " = " + std::to_string(v2f1.Dot(v2f2))).c_str());
+
+        ImGui::Text(" 2D vector magnitude:                  ");
+        ImGui::SameLine();
+        ImGui::Text(("|" + v2f1.ToString() + "|" + " = " + std::to_string(v2f1.Magnitude())).c_str());
+
+        Vector2f v2f1Norm = v2f1;
+        v2f1Norm.Normalize();
+        ImGui::Text(" 2D vector normalization:              ");
+        ImGui::SameLine();
+        ImGui::Text(("The unit vector of " + v2f1.ToString() + " is " + v2f1Norm.ToString()).c_str());
+
+        ImGui::NewLine();
+
+        // 3D vector tests
+        ImGui::Text("3D Vector tests");
+
+        Vector3f v3f1 = { 5.01, 10.2, -0.01 };
+        Vector3f v3f2 = { 0, -24, -3.4 };
+
+        ImGui::Text(" Adding 3D vectors:                    ");
+        ImGui::SameLine();
+        ImGui::Text((v3f1.ToString() + " + " + v3f2.ToString() + " = " + (v3f1 + v3f2).ToString()).c_str());
+
+        ImGui::Text(" Subtracting 3D vectors:               ");
+        ImGui::SameLine();
+        ImGui::Text((v3f1.ToString() + " - " + v3f2.ToString() + " = " + (v3f1 - v3f2).ToString()).c_str());
+
+        ImGui::Text(" Multiplying 3D vectors by a scalar:   ");
+        ImGui::SameLine();
+        ImGui::Text(("2 * " + v3f2.ToString() + " = " + (2 * v3f2).ToString()).c_str());
+
+        ImGui::Text(" Dividing 3D vectors by a scalar:      ");
+        ImGui::SameLine();
+        ImGui::Text((v3f2.ToString() + " / 2 = " + (v3f2 / 2).ToString()).c_str());
+
+        ImGui::Text(" Dotting 3D vectors:                   ");
+        ImGui::SameLine();
+        ImGui::Text((v3f1.ToString() + " . " + v3f2.ToString() + " = " + std::to_string(v3f1.Dot(v3f2))).c_str());
+
+        ImGui::Text(" Crossing 3D vectors:                  ");
+        ImGui::SameLine();
+        ImGui::Text((v3f1.ToString() + " x " + v3f2.ToString() + " = " + (v3f1.Cross(v3f2)).ToString()).c_str());
+
+        ImGui::Text(" 3D vector magnitude:                  ");
+        ImGui::SameLine();
+        ImGui::Text(("|" + v3f1.ToString() + "|" + " = " + std::to_string(v3f1.Magnitude())).c_str());
+
+        Vector3f v3f1Norm = v3f1;
+        v3f1Norm.Normalize();
+        ImGui::Text(" 3D vector normalization:              ");
+        ImGui::SameLine();
+        ImGui::Text(("The unit vector of " + v3f1.ToString() + " is " + v3f1Norm.ToString()).c_str());
+    }
+
     void UpdateImGui() {
         // ImGui stuff (from example)
         ImGui_ImplSDLRenderer_NewFrame();
@@ -513,6 +594,18 @@ public:
                 if (ImGui::BeginMenu("Interface")) {
                     if (ImGui::Checkbox("Dark Mode", &mDarkMode)) {
                         SetImGuiStyle(mDarkMode);
+                    }
+                    ImGui::EndMenu();
+                }
+
+                if (ImGui::BeginMenu("Testing")) {
+                    if (ImGui::Button("Begin Tests")) ImGui::OpenPopup("Testing");
+                    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y / 2), ImGuiCond_Always, ImVec2(0.5, 0.5));
+                    if (ImGui::BeginPopup("Testing")) {
+                        ImGui::PushFont(mMonoFont);
+                        RunTests();
+                        ImGui::PopFont();
+                        ImGui::EndPopup();
                     }
                     ImGui::EndMenu();
                 }
@@ -595,7 +688,7 @@ public:
                     if (ImGui::Button("Browse for file")) {
                         nfdchar_t* path = NULL;
                         nfdresult_t result = NFD_OpenDialog("obj", NULL, &path);
-                        mNewObjectPath = AbsolutePathToRelative(path);
+                        if (result == nfdresult_t::NFD_OKAY) mNewObjectPath = AbsolutePathToRelative(path);
                     }
                 }
 
@@ -1447,6 +1540,8 @@ private:
 
     RayVisualizationSettings  mRayVisualizationSettings;
     std::vector<Line3D>       mRayVisualizationLines;
+
+    ImFont*    mMonoFont;
 };
 
 int main(int argc, char* argv[]) {

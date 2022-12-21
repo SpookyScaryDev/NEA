@@ -1,6 +1,7 @@
 #include "Vector2f.h"
 
 #include <math.h>
+#include <sstream>
 #include <Error.h>
 
 #include <nlohmann/json.hpp>
@@ -11,6 +12,16 @@ namespace Prototype {
 
 Vector2f::Vector2f(float fx, float fy) :
     x(fx), y(fy) {}
+
+std::string Vector2f::ToString() const {
+    std::stringstream stream;
+    stream << "(";
+    stream << std::setprecision(3) << x << ", ";
+    stream << std::setprecision(3) << y;
+    stream << ")";
+
+    return stream.str();
+}
 
 Vector2f Vector2f::LoadFromJSON(json data) {
     Vector2f vector;
@@ -116,11 +127,6 @@ bool Vector2f::operator!=(const Vector2f& vector) const {
 
 Vector2f operator*(const float scalar, const Vector2f& vector) {
     return vector * scalar;
-}
-
-Vector2f operator/(const float scalar, const Vector2f& vector) {
-    ASSERT(scalar != 0, "Tried to divide a vector by 0!");
-    return vector / scalar;
 }
 
 }

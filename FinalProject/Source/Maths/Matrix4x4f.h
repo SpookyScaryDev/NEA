@@ -9,6 +9,8 @@ public:
 	                    Matrix4x4f();
 	                    Matrix4x4f(float data[4][4]);
 
+    std::string         ToString() const;
+
     static Matrix4x4f   Zero();
     static Matrix4x4f   Identity();
 
@@ -43,6 +45,5 @@ private:
 };
 
 Matrix4x4f     operator*(const float scalar, const Matrix4x4f& matrix);
-Matrix4x4f     operator/(const float scalar, const Matrix4x4f& matrix);
 
 }
