@@ -138,7 +138,7 @@ public:
         mOutputTexture = new Texture(mInternalWidth, mInternalHeight);
         SDL_SetTextureScaleMode(mOutputTexture->GetRawTexture(), SDL_ScaleModeBest); // TODO: Put in Texture class
 
-        mDefaultCamera = Camera(mAspectRatio, 4, Vector3f());
+        mDefaultCamera = Camera(mAspectRatio, 2, Vector3f());
 
         if (!file) New();
         else mScene = mScene = Scene::LoadFromFile(file);
@@ -219,9 +219,9 @@ public:
             style.Colors[ImGuiCol_ResizeGrip] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
             style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.2000000029802322f, 0.2000000029802322f, 0.2156862765550613f, 1.0f);
             style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(0.321568638086319f, 0.321568638086319f, 0.3333333432674408f, 1.0f);
-            style.Colors[ImGuiCol_Tab] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
+            style.Colors[ImGuiCol_TabActive] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
             style.Colors[ImGuiCol_TabHovered] = ImVec4(0.1137254908680916f, 0.5921568870544434f, 0.9254902005195618f, 1.0f);
-            style.Colors[ImGuiCol_TabActive] = ImVec4(0.1725490242242813f, 0.1725490242242813f, 0.1803921610116959f, 1.0f);
+            style.Colors[ImGuiCol_Tab] = ImVec4(0.1725490242242813f, 0.1725490242242813f, 0.1803921610116959f, 1.0f);
             style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.1450980454683304f, 0.1450980454683304f, 0.1490196138620377f, 1.0f);
             style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.1725490242242813f, 0.1725490242242813f, 0.1803921610116959f, 1.0f);
             style.Colors[ImGuiCol_PlotLines] = ImVec4(0.0f, 0.4666666686534882f, 0.7843137383460999f, 1.0f);
@@ -255,6 +255,7 @@ public:
         std::ofstream file(path);
         if (file.good()) {
             json data;
+            data["selectedObject"] = mSelectedObject;
             data["rayVisualizationSettings"] = mRayVisualizationSettings.ToJSON();
             data["previewRenderSettings"] = mPreviewRenderSettings.ToJSON();
             data["outputRenderSettings"] = mOutputRenderSettings.ToJSON();
@@ -273,6 +274,7 @@ public:
         std::ifstream file(path);
         if (file.good()) {
             json data = json::parse(file);
+            if (data.contains("selectedObject")) mSelectedObject = data["selectedObject"];
             mRayVisualizationSettings.LoadFromJSON(data["rayVisualizationSettings"]);
             mPreviewRenderSettings.LoadFromJSON(data["previewRenderSettings"]);
             mOutputRenderSettings.LoadFromJSON(data["outputRenderSettings"]);
@@ -561,6 +563,37 @@ public:
         ImGui::Text(" 3D vector normalization:              ");
         ImGui::SameLine();
         ImGui::Text(("The unit vector of " + v3f1.ToString() + " is " + v3f1Norm.ToString()).c_str());
+
+        ImGui::NewLine();
+
+        // Matrix tests
+        ImGui::Text("4 by 4 matrix tests");
+
+        Matrix4x4f translate = Matrix4x4f::Translate({ 3, 1, -5.2 });
+        Matrix4x4f rotate = Matrix4x4f::Rotate({ 30, 45, 107.3 });
+        Matrix4x4f scale = Matrix4x4f::Scale({ 2, 1.4, -4.2 });
+        Matrix4x4f identity = Matrix4x4f::Identity();
+        Matrix4x4f zero = Matrix4x4f::Zero();
+
+        ImGui::Text(" Zero matrix:                          ");
+        ImGui::SameLine();
+        ImGui::Text((zero.ToString()).c_str());
+
+        ImGui::Text(" Identity matrix:                      ");
+        ImGui::SameLine();
+        ImGui::Text((identity.ToString()).c_str());
+
+        ImGui::Text(" Translation matrix from (3, 1, -5.2): ");
+        ImGui::SameLine();
+        ImGui::Text((translate.ToString()).c_str());
+
+        ImGui::Text(" Rotation matrix from (30, 45, 107.3): ");
+        ImGui::SameLine();
+        ImGui::Text((rotate.ToString()).c_str());
+
+        ImGui::Text(" Scale matrix from (2, 1.4, -4.2):     ");
+        ImGui::SameLine();
+        ImGui::Text((scale.ToString()).c_str());
     }
 
     void UpdateImGui() {
@@ -654,13 +687,13 @@ public:
             ImGui::SetNextWindowPos(ImGui::GetWindowPos(), ImGuiCond_Always, ImVec2(1, 0));
             if (ImGui::BeginPopup("Add Object")) {
 
-                char nameBuffer[100];
-                sprintf_s(nameBuffer, mNewObjectName.c_str(), 100);
-                ImGui::InputText("Name", nameBuffer, 100);
+                char nameBuffer[30];
+                sprintf_s(nameBuffer, mNewObjectName.c_str(), 30);
+                ImGui::InputText("Name", nameBuffer, 30);
                 mNewObjectName = nameBuffer;
 
                 const char* objectTypes[] = { "Sphere", "Cube", "Prism", "Diverging Lens", "Converging Lens", "3D Model" };
-                if (ImGui::BeginCombo("Material Type", objectTypes[mNewObjectType])) {
+                if (ImGui::BeginCombo("Object Type", objectTypes[mNewObjectType])) {
                     for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
                         const bool selected = (mNewObjectType == i);
                         if (ImGui::Selectable(objectTypes[i], selected)) {
@@ -787,13 +820,13 @@ public:
                 Vector3f rotation = obj->GetRotation();
                 Vector3f scale = obj->GetScale();
 
-                if (ImGui::DragFloat3("Position", (float*)&position, 0.01)) {
+                if (ImGui::DragFloat3("Position (x, y, z)", (float*)&position, 0.01)) {
                     mRedrawThisFrame = true;
                     obj->SetPosition(position);
                 }
 
                 if (obj->GetType() != ObjectType::Sphere) {
-                    if (ImGui::DragFloat3("Rotation", (float*)&rotation, 1)) {
+                    if (ImGui::DragFloat3("Rotation (x, y, z)", (float*)&rotation, 1)) {
                         mRedrawThisFrame = true;
                         rotation.x = fmod(rotation.x, 360);
                         rotation.y = fmod(rotation.y, 360);
@@ -817,7 +850,7 @@ public:
                         mRedrawThisFrame = true;
                         obj->SetScale(scale);
                     }
-                    if (ImGui::DragFloat("Width", (float*)&width, 0.01, 0.01, 1)) {
+                    if (ImGui::DragFloat("Thickness", (float*)&width, 0.01, 0.01, 1)) {
                         mRedrawThisFrame = true;
                         lens->SetWidth(width);
                     }
@@ -834,7 +867,7 @@ public:
                         mRedrawThisFrame = true;
                         obj->SetScale(scale);
                     }
-                    if (ImGui::DragFloat("Width", (float*)&width, 0.01, 0.01, 1)) {
+                    if (ImGui::DragFloat("Thickness", (float*)&width, 0.01, 0.01, 1)) {
                         mRedrawThisFrame = true;
                         lens->SetWidth(width);
                     }
@@ -866,10 +899,21 @@ public:
                 obj->name = std::string(buffer);
 
                 if (ImGui::Button("Delete")) {
-                    mScene.RemoveObject(obj);
-                    mSelectedObject--;
-                    mRedrawThisFrame = true;
+                    ImGui::OpenPopup("Delete");
                 }
+
+                if (ImGui::BeginPopup("Delete")) {
+                    ImGui::Text("Are you sure?");
+                    if (ImGui::Button("Yes")) {
+                        mScene.RemoveObject(obj);
+                        mSelectedObject--;
+                        mRedrawThisFrame = true;
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+                    ImGui::EndPopup();
+                }
+
             }
             else {
                 ImGui::Text("Select an object to edit it's properties.");
@@ -915,6 +959,7 @@ public:
                         bool selected = ((int)material->materialType == i);
                         if (ImGui::Selectable(materials[i], selected)) {
                             // Change material type
+                            if ((MaterialType)i != MaterialType::Lambertian) material->emitted = 0;
                             material->materialType = (MaterialType)i;
                             mRedrawThisFrame = true;
                         }
@@ -925,10 +970,10 @@ public:
                 }
 
                 mRedrawThisFrame |= ImGui::ColorEdit3("Colour", (float*)&material->colour);
-                if (material->materialType != MaterialType::Glass) mRedrawThisFrame |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.1, 0, 100);
+                if (material->materialType == MaterialType::Lambertian) mRedrawThisFrame |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.1, 0, 1000);
                 // TODO: albedo
                 if (material->materialType == MaterialType::Glass) mRedrawThisFrame |= ImGui::SliderFloat("Index of Refraction", &material->refractiveIndex, 1, 2);
-                if (material->materialType != MaterialType::Lambertian) mRedrawThisFrame |= ImGui::SliderFloat("Roughness", &material->roughness, 0, 1000);
+                if (material->materialType != MaterialType::Lambertian) mRedrawThisFrame |= ImGui::DragFloat("Roughness", &material->roughness, 1, 0, 990);
             }
             else {
                 ImGui::Text("Select an object to edit it's material.");
@@ -961,9 +1006,9 @@ public:
 
                     ImGui::NewLine();
 
-                    mRedrawThisFrame |= ImGui::SliderInt("Max Depth", &mPreviewRenderSettings.maxDepth, 1, 100);
-                    mRedrawThisFrame |= ImGui::SliderInt("Samples Per Frame", &mPreviewRenderSettings.samples, 1, 100);
-                    mRedrawThisFrame |= ImGui::SliderInt("Threads", &mPreviewRenderSettings.numThreads, 1, 100);
+                    mRedrawThisFrame |= ImGui::DragInt("Max Bounce Depth", &mPreviewRenderSettings.maxDepth, 1, 1, 1000);
+                    mRedrawThisFrame |= ImGui::DragInt("Samples Per Frame", &mPreviewRenderSettings.samples, 0.5, 1, 10);
+                    mRedrawThisFrame |= ImGui::DragInt("Threads", &mPreviewRenderSettings.numThreads, 1, 1, 30);
 
                     if (ImGui::ColorEdit3("Ambient Light Colour", (float*)&mPreviewRenderSettings.ambientLight)) {
                         mRedrawThisFrame = true;
@@ -1032,9 +1077,9 @@ public:
                     if (res[1] > 0) mOutputRenderSettings.resolution.y = res[1];
                     delete res;
 
-                    ImGui::SliderInt("Max Depth", &mOutputRenderSettings.maxDepth, 1, 100);
-                    ImGui::SliderInt("Samples Per Frame", &mOutputRenderSettings.samples, 1, 100);
-                    ImGui::SliderInt("Threads", &mPreviewRenderSettings.numThreads, 1, 100);
+                    ImGui::DragInt("Max Bounce Depth", &mOutputRenderSettings.maxDepth, 1, 1, 100);
+                    ImGui::DragInt("Samples Per Frame", &mOutputRenderSettings.samples, 1, 1, 10000);
+                    ImGui::DragInt("Threads", &mPreviewRenderSettings.numThreads, 1, 1, 30);
                     ImGui::ColorEdit3("Ambient Light Colour", (float*)&mOutputRenderSettings.ambientLight);
                     ImGui::Checkbox("Checkerboard", &mOutputRenderSettings.checkerboard);
                     ImGui::Checkbox("Explicit Light Sampling", &mOutputRenderSettings.directLightSampling);
@@ -1099,8 +1144,8 @@ public:
             ImGui::PopItemWidth();
 
             ImGui::DragInt("Initial rays cast", &mRayVisualizationSettings.initialRays, 1, 0, 100);
-            ImGui::DragInt("Max depth", &mRayVisualizationSettings.maxBounceDepth, 1, 0, 100);
-            ImGui::DragFloat("Max distance", &mRayVisualizationSettings.maxDistance, 0.01, 0.01, 10);
+            ImGui::DragInt("Max bounce depth", &mRayVisualizationSettings.maxBounceDepth, 1, 0, 100);
+            ImGui::DragFloat("Max distance", &mRayVisualizationSettings.maxDistance, 0.01, 0.01, 1000);
 
             ImGui::Checkbox("Same colour", &mRayVisualizationSettings.sameColour);
             ImGui::SameLine();
@@ -1139,7 +1184,7 @@ public:
     }
 
     void DrawRay(Texture* image, Line2D line, Line3D line3d) {
-        // Use the Bresenham algorthithm to draw the ray onto the screen.
+        // Use the Bresenham algorithm to draw the ray onto the screen.
 
         image->Lock();
 
@@ -1348,23 +1393,6 @@ public:
         // Keyboard shortcuts.
         const Uint8* keyboardState = SDL_GetKeyboardState(NULL);
 
-        if (keyboardState[SDL_SCANCODE_W]) {
-            mScene.camera.MoveInDirection({ 0, 0, 0.6 });
-            mRedrawThisFrame = true;
-        }
-        if (keyboardState[SDL_SCANCODE_S]) {
-            mScene.camera.MoveInDirection({ 0, 0, -0.6 });
-            mRedrawThisFrame = true;
-        }
-        if (keyboardState[SDL_SCANCODE_A]) {
-            mScene.camera.MoveInDirection({ -0.3, 0, 0 });
-            mRedrawThisFrame = true;
-        }
-        if (keyboardState[SDL_SCANCODE_D]) {
-            mScene.camera.MoveInDirection({ 0.3, 0, 0 });
-            mRedrawThisFrame = true;
-        }
-
         if (keyboardState[SDL_SCANCODE_LCTRL] && keyboardState[SDL_SCANCODE_LSHIFT] && keyboardState[SDL_SCANCODE_S]) {
             SaveSceneAs();
         }
@@ -1377,6 +1405,24 @@ public:
         else if (keyboardState[SDL_SCANCODE_LCTRL] && keyboardState[SDL_SCANCODE_N]) {
             New();
         }
+
+        else if (keyboardState[SDL_SCANCODE_W]) {
+            mScene.camera.MoveInDirection({ 0, 0, 0.6 });
+            mRedrawThisFrame = true;
+        }
+        else if (keyboardState[SDL_SCANCODE_S]) {
+            mScene.camera.MoveInDirection({ 0, 0, -0.6 });
+            mRedrawThisFrame = true;
+        }
+        else if (keyboardState[SDL_SCANCODE_A]) {
+            mScene.camera.MoveInDirection({ -0.3, 0, 0 });
+            mRedrawThisFrame = true;
+        }
+        else if (keyboardState[SDL_SCANCODE_D]) {
+            mScene.camera.MoveInDirection({ 0.3, 0, 0 });
+            mRedrawThisFrame = true;
+        }
+
     }
 
     void DrawRayVisualization() {

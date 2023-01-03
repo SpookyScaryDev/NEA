@@ -1,0 +1,57 @@
+{
+    "outputRenderSettings": {
+        "ambientLight": [
+            0.4601770043373108,
+            0.4601770043373108,
+            0.4601770043373108
+        ],
+        "checkerboard": true,
+        "directLightSampling": false,
+        "fastMode": false,
+        "maxDepth": 1000,
+        "mode": 0,
+        "numThreads": 10,
+        "resolution": [
+            4500.0,
+            2250.0
+        ],
+        "samples": 500
+    },
+    "previewRenderSettings": {
+        "ambientLight": [
+            0.4601770043373108,
+            0.4601770043373108,
+            0.4601770043373108
+        ],
+        "checkerboard": false,
+        "directLightSampling": true,
+        "fastMode": false,
+        "maxDepth": 15,
+        "mode": 0,
+        "numThreads": 15,
+        "resolution": [
+            450.0,
+            225.0
+        ],
+        "samples": 1
+    },
+    "rayVisualizationSettings": {
+        "enable": true,
+        "framesPerUpdate": 2,
+        "ignoreGround": true,
+        "ignoreSky": false,
+        "initialRays": 43,
+        "lineColour": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "maxBounceDepth": 4,
+        "maxDistance": 19.81999969482422,
+        "sameColour": false,
+        "shortenRays": true,
+        "shortenedRayLength": 1.9900000095367432,
+        "updateRegularly": true
+    },
+    "selectedObject": 1
+}

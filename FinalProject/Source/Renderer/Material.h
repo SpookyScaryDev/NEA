@@ -27,7 +27,7 @@ enum class MaterialPreset {
 
 class Material {
 public:
-                        Material(MaterialType type = MaterialType::Lambertian, Colour colour = Vector3f(0.9, 0.9, 0.9), float roughness = 1, float refractiveIndex = 1.5, float emitted = 0);
+                        Material(MaterialType type = MaterialType::Lambertian, Colour colour = Vector3f(0.9, 0.9, 0.9), float roughness = 0, float refractiveIndex = 1.5, float emitted = 0);
 
     bool                operator==(const Material& material) const;
 

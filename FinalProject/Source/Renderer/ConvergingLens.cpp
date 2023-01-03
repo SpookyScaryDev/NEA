@@ -20,7 +20,7 @@ namespace Prototype {
 
 	nlohmann::json ConvergingLens::ToJSON() {
 		json data = Object::ToJSON();
-		data["type"] = "divergingLens";
+		data["type"] = "convergingLens";
 		data["width"] = mWidth;
 
 		return data;

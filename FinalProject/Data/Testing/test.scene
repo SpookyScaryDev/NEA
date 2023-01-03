@@ -1,0 +1,315 @@
+{
+    "camera": {
+        "aspectRatio": 2.0,
+        "focalLength": 2.0,
+        "forward": [
+            -0.045535456389188766,
+            -0.2775312066078186,
+            -0.959636926651001
+        ],
+        "position": [
+            -1.8351757526397705,
+            5.618084907531738,
+            18.066755294799805
+        ]
+    },
+    "objects": [
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.4203540086746216,
+                    0.4203540086746216,
+                    0.4203540086746216
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 1.0,
+                "type": "lambertian"
+            },
+            "name": "Ground",
+            "position": [
+                0.0,
+                -1001.0,
+                0.0
+            ],
+            "radius": 1000.0,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1000.0,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    0.20000000298023224,
+                    0.20000000298023224
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 950.0,
+                "type": "specular"
+            },
+            "name": "Cube",
+            "path": "Models/Cube.obj",
+            "position": [
+                -2.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "mesh"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "emitted": 87.9000015258789,
+                "refractiveIndex": 1.5,
+                "roughness": 1.0,
+                "type": "lambertian"
+            },
+            "name": "Light",
+            "position": [
+                -4.179999828338623,
+                3.509999990463257,
+                -0.44999998807907104
+            ],
+            "radius": 0.6000000238418579,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                0.6000000238418579,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.5044248104095459,
+                    1.0,
+                    0.6447646021842957
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "lambertian"
+            },
+            "name": "Object 3",
+            "position": [
+                0.9100000262260437,
+                0.0,
+                -2.569999933242798
+            ],
+            "radius": 1.0,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.6858407258987427,
+                    1.0,
+                    0.7998276352882385
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "glass"
+            },
+            "name": "Object 4",
+            "position": [
+                0.0,
+                -0.7200000286102295,
+                6.21999979019165
+            ],
+            "radius": 0.33000001311302185,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                0.33000001311302185,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.8999999761581421,
+                    0.8999999761581421,
+                    0.8999999761581421
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "specular"
+            },
+            "name": "Object 5",
+            "path": "Models/Prism.obj",
+            "position": [
+                -4.28000020980835,
+                -0.5699999928474426,
+                1.9900000095367432
+            ],
+            "rotation": [
+                0.0,
+                31.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "mesh"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.6738193035125732,
+                    0.5663716793060303,
+                    1.0
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "lambertian"
+            },
+            "name": "Object 6",
+            "path": "Models/Cube.obj",
+            "position": [
+                -2.700000047683716,
+                -0.25,
+                3.630000114440918
+            ],
+            "rotation": [
+                51.0,
+                -38.0,
+                32.0
+            ],
+            "scale": [
+                0.2800000011920929,
+                0.6499999761581421,
+                0.2800000011920929
+            ],
+            "show": true,
+            "type": "mesh"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    0.5221239328384399,
+                    0.9788551330566406
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 900.0,
+                "type": "glass"
+            },
+            "name": "Object 7",
+            "position": [
+                -5.070000171661377,
+                -0.6800000071525574,
+                4.769999980926514
+            ],
+            "radius": 0.3700000047683716,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                0.3700000047683716,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.0,
+                    1.0,
+                    0.8141591548919678
+                ],
+                "emitted": 27.200000762939453,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "lambertian"
+            },
+            "name": "Object 8",
+            "position": [
+                0.9800000190734863,
+                2.049999952316284,
+                5.159999847412109
+            ],
+            "radius": 0.3799999952316284,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                0.3799999952316284,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        }
+    ]
+}

@@ -2,10 +2,15 @@
     "camera": {
         "aspectRatio": 2.0,
         "focalLength": 2.0,
+        "forward": [
+            -0.018188683316111565,
+            -0.18771345913410187,
+            -0.9820554852485657
+        ],
         "position": [
-            -1.6511919498443604,
-            2.9060075283050537,
-            22.210691452026367
+            -1.8031305074691772,
+            9.355830192565918,
+            21.428043365478516
         ]
     },
     "objects": [
@@ -39,41 +44,8 @@
                 0.0,
                 0.0
             ],
-            "show": true,
+            "show": false,
             "type": "sphere"
-        },
-        {
-            "lockAspectRatio": true,
-            "material": {
-                "colour": [
-                    1.0,
-                    0.20000000298023224,
-                    0.20000000298023224
-                ],
-                "emitted": 0.0,
-                "refractiveIndex": 1.5,
-                "roughness": 950.0,
-                "type": "specular"
-            },
-            "name": "Cube",
-            "path": "Models/Cube.obj",
-            "position": [
-                -2.0,
-                0.0,
-                0.0
-            ],
-            "rotation": [
-                0.0,
-                0.0,
-                0.0
-            ],
-            "scale": [
-                1.0,
-                1.0,
-                1.0
-            ],
-            "show": true,
-            "type": "mesh"
         },
         {
             "lockAspectRatio": true,
@@ -94,19 +66,86 @@
                 5.260000228881836,
                 0.0
             ],
-            "radius": 0.5,
+            "radius": 0.3100000023841858,
             "rotation": [
                 0.0,
                 0.0,
                 0.0
             ],
             "scale": [
-                0.5,
+                0.3100000023841858,
                 0.0,
                 0.0
             ],
             "show": true,
             "type": "sphere"
+        },
+        {
+            "curvature": 1.4800000190734863,
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "glass"
+            },
+            "name": "Object 3",
+            "position": [
+                -7.440000057220459,
+                5.289999961853027,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "divergingLens",
+            "width": 0.10999999940395355
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "glass"
+            },
+            "name": "Object 3",
+            "position": [
+                2.700000047683716,
+                5.25,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                90.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "convergingLens",
+            "width": 0.5
         }
     ]
 }

@@ -161,13 +161,10 @@ Matrix4x4f Matrix4x4f::operator*(const float scalar) const {
 
 Matrix4x4f Matrix4x4f::operator*(const Matrix4x4f& matrix) const {
     Matrix4x4f result = Matrix4x4f();
-    for (int row = 0; row < 4; row++)
-    {
-        for (int column = 0; column < 4; column++)
-        {
+    for (int row = 0; row < 4; row++) {
+        for (int column = 0; column < 4; column++) {
             float element = 0;
-            for (int i = 0; i < 4; i++)
-            {
+            for (int i = 0; i < 4; i++) {
                 element += GetValue(row, i) * matrix.GetValue(i, column);
             }
             result.SetValue(row, column, element);

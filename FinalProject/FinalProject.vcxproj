@@ -160,6 +160,9 @@ IF EXIST Data\*.*\ (xcopy /Q /E /Y /I Data\*.* Binaries\Release-windows-x86_64 &
       <Project>{5D94880B-C99D-887C-5219-9F7CBE21947C}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

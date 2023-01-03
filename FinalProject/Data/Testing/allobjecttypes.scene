@@ -1,0 +1,283 @@
+{
+    "camera": {
+        "aspectRatio": 2.0,
+        "focalLength": 2.0,
+        "forward": [
+            -0.005633302498608828,
+            -0.22477033734321594,
+            -0.9743955135345459
+        ],
+        "position": [
+            -0.9423030018806458,
+            7.0275421142578125,
+            23.82063102722168
+        ]
+    },
+    "objects": [
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.4203540086746216,
+                    0.4203540086746216,
+                    0.4203540086746216
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 1.0,
+                "type": "lambertian"
+            },
+            "name": "Ground",
+            "position": [
+                0.0,
+                -1001.0,
+                0.0
+            ],
+            "radius": 1000.0,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1000.0,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "emitted": 63.29999923706055,
+                "refractiveIndex": 1.5,
+                "roughness": 1.0,
+                "type": "lambertian"
+            },
+            "name": "Light",
+            "position": [
+                -2.200000047683716,
+                5.260000228881836,
+                0.0
+            ],
+            "radius": 0.5,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                0.5,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.38053083419799805,
+                    0.0,
+                    1.0
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "lambertian"
+            },
+            "name": "Object 3",
+            "position": [
+                -2.380000114440918,
+                0.0,
+                0.0
+            ],
+            "radius": 1.0,
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "show": true,
+            "type": "sphere"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "lambertian"
+            },
+            "name": "Object 3",
+            "path": "Models/Cube.obj",
+            "position": [
+                2.3399999141693115,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "mesh"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    0.2743363380432129,
+                    1.0,
+                    0.0
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "lambertian"
+            },
+            "name": "Object 4",
+            "path": "Models/Prism.obj",
+            "position": [
+                -4.940000057220459,
+                -0.47999998927116394,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                -48.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "mesh"
+        },
+        {
+            "curvature": 1.4800000190734863,
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    0.7433627843856812,
+                    0.0
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "lambertian"
+            },
+            "name": "Object 5",
+            "position": [
+                5.170000076293945,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                127.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "divergingLens",
+            "width": 0.10999999940395355
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "lambertian"
+            },
+            "name": "Object 7",
+            "path": "Models/Amogus.obj",
+            "position": [
+                -7.46999979019165,
+                -1.0399999618530273,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                41.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "mesh"
+        },
+        {
+            "lockAspectRatio": true,
+            "material": {
+                "colour": [
+                    1.0,
+                    0.0,
+                    0.7964601516723633
+                ],
+                "emitted": 0.0,
+                "refractiveIndex": 1.5,
+                "roughness": 0.0,
+                "type": "lambertian"
+            },
+            "name": "Object 3",
+            "position": [
+                0.0,
+                -0.1899999976158142,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                -120.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "show": true,
+            "type": "convergingLens",
+            "width": 0.5
+        }
+    ]
+}

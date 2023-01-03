@@ -30,6 +30,7 @@ void Camera::Create(float aspectRatio, float focalLength, Vector3f pos) {
 
 Camera Camera::LoadFromJSON(json data) {
 	Camera camera(data["aspectRatio"], data["focalLength"], Vector3f::LoadFromJSON(data["position"]));
+	if (data.contains("forward")) camera.LookAt(camera.GetPosition() + Vector3f::LoadFromJSON(data["forward"]));
 	return camera;
 }
 
@@ -38,6 +39,7 @@ json Camera::ToJSON() {
 	data["aspectRatio"] = mAspectRatio;
 	data["focalLength"] = mFocalLength;
 	data["position"] = mPosition.ToJSON();
+	data["forward"] = mForward.ToJSON();
 
 	return data;
 }
