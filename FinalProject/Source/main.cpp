@@ -457,7 +457,7 @@ public:
 
         for (float i = 0; i < 2 * M_PI; i += 2 * M_PI / divisions) {
             for (float j = 0; j < 2 * M_PI; j += 2 * M_PI / divisions) {
-                Vector3f direction = Vector3f(sin(i) * cos(j), sin(j) * cos(i), cos(i));
+                Vector3f direction = Vector3f(sin(i) * cos(j), sin(j) * sin(i), cos(i));
                 direction.Normalize();
                 rays.push_back({ origin, direction });
                 //lines.push_back({ origin, direction * 2 + origin });
@@ -1210,7 +1210,7 @@ public:
                 if (alpha < 0) alpha = 0;
                 if (alpha > 1) alpha = 1;
 
-                // Make sure the line is between the start and end points.
+                // Make sure the pixel is on screen.
                 if (xCoord >= 0 && xCoord < image->GetWidth() && yCoord >= 0 && yCoord < image->GetHeight()) {
 
                     // Get the position of the line through that pixel.
