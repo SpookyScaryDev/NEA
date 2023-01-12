@@ -596,6 +596,604 @@ public:
         ImGui::Text((scale.ToString()).c_str());
     }
 
+    void UIMenuBar() {
+        if (ImGui::BeginMainMenuBar()) {
+            if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("New")) {
+                    New();
+                }
+                if (ImGui::MenuItem("Save")) {
+                    Save();
+                }
+                if (ImGui::MenuItem("Save As")) {
+                    SaveSceneAs();
+                }
+                if (ImGui::MenuItem("Open")) {
+                    OpenScene();
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Interface")) {
+                if (ImGui::Checkbox("Dark Mode", &mDarkMode)) {
+                    SetImGuiStyle(mDarkMode);
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Testing")) {
+                if (ImGui::Button("Begin Tests")) ImGui::OpenPopup("Testing");
+                ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y / 2), ImGuiCond_Always, ImVec2(0.5, 0.5));
+                if (ImGui::BeginPopup("Testing")) {
+                    ImGui::PushFont(mMonoFont);
+                    RunTests();
+                    ImGui::PopFont();
+                    ImGui::EndPopup();
+                }
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMainMenuBar();
+        }
+    }
+
+    void UIFpsOverlay() {
+        ImGui::SetNextWindowBgAlpha(0.9f);
+        ImGui::Begin("Overlay", (bool*)1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
+        ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::Text("Renderer: %.3f ms/frame (%.1f FPS)", mRendererFps * 1000, 1000 / (mRendererFps * 1000));
+
+        ImGui::End();
+    }
+
+    void UICamera() {
+        ImGui::Begin("Camera");
+        Vector3f position = mScene.camera.GetPosition();
+
+        if (ImGui::DragFloat3("Position", (float*)&position, 0.01)) {
+            mRedrawThisFrame = true;
+            mScene.camera.SetPosition(position);
+        }
+
+        mRedrawThisFrame |= ImGui::Checkbox("Look at selected object", &mLookAtSelected);
+        if (ImGui::Button("Reset view")) {
+            mRedrawThisFrame = true;
+            mScene.camera.LookAt(mScene.camera.GetPosition() + Vector3f(0, 0, -1));
+        }
+
+        ImGui::End();
+    }
+
+    void UIObjectSelect() {
+        ImGui::Begin("Objects");
+        if (ImGui::Button("Add New Object", { ImGui::GetWindowWidth(), 20 })) {
+            ImGui::OpenPopup("Add Object");
+        }
+
+        // New object pop-up
+        ImGui::SetNextWindowPos(ImGui::GetWindowPos(), ImGuiCond_Always, ImVec2(1, 0));
+        if (ImGui::BeginPopup("Add Object")) {
+
+            char nameBuffer[30];
+            sprintf_s(nameBuffer, mNewObjectName.c_str(), 30);
+            ImGui::InputText("Name", nameBuffer, 30);
+            mNewObjectName = nameBuffer;
+
+            const char* objectTypes[] = { "Sphere", "Cube", "Prism", "Diverging Lens", "Converging Lens", "3D Model" };
+            if (ImGui::BeginCombo("Object Type", objectTypes[mNewObjectType])) {
+                for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
+                    const bool selected = (mNewObjectType == i);
+                    if (ImGui::Selectable(objectTypes[i], selected)) {
+                        mNewObjectType = i;
+                    }
+
+                    if (selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+
+            bool valid = true;
+
+            if (objectTypes[mNewObjectType] == "3D Model") {
+                char buffer[100];
+                sprintf_s(buffer, mNewObjectPath.c_str(), mNewObjectPath.length());
+                std::ifstream file(mNewObjectPath);
+                valid = file.good();
+                if (!valid) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                ImGui::InputText("File Path", buffer, 100);
+                if (!valid) ImGui::PopStyleColor();
+                mNewObjectPath = buffer;
+
+                if (ImGui::Button("Browse for file")) {
+                    nfdchar_t* path = NULL;
+                    nfdresult_t result = NFD_OpenDialog("obj", NULL, &path);
+                    if (result == nfdresult_t::NFD_OKAY) mNewObjectPath = AbsolutePathToRelative(path);
+                }
+            }
+
+            if (ImGui::Button("Ok") && valid) {
+                ImGui::CloseCurrentPopup();
+                Object* object;
+
+                if (objectTypes[mNewObjectType] == "Sphere") {
+                    object = (Object*) new Sphere(Vector3f(), 1, Material());
+                }
+                else if (objectTypes[mNewObjectType] == "Cube") {
+                    object = (Object*) new Mesh({ 0, 0, 0 }, "Models/Cube.obj", Material());
+                }
+                else if (objectTypes[mNewObjectType] == "Prism") {
+                    object = (Object*) new Mesh({ 0, 0, 0 }, "Models/Prism.obj", Material());
+                }
+                else if (objectTypes[mNewObjectType] == "3D Model") {
+                    object = (Object*) new Mesh({ 0, 0, 0 }, mNewObjectPath.c_str(), Material());
+                }
+                else if (objectTypes[mNewObjectType] == "Diverging Lens") {
+                    object = (Object*) new DivergingLens({ 0, 0, 0 }, 0.11, 1.48, Material());
+                }
+                else if (objectTypes[mNewObjectType] == "Converging Lens") {
+                    object = (Object*) new ConvergingLens({ 0, 0, 0 }, 0.5, Material());
+                }
+
+                object->material = Material::LoadFromPreset(MaterialPreset::Paper);
+
+                mRedrawThisFrame = true;
+                mScene.AddObject(mNewObjectName.c_str(), object);
+                mSelectedObject = mScene.GetObjectCount() - 1;
+                mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
+                mNewObjectPath = "";
+                mNewObjectType = 0;
+            }
+            if (!valid && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+
+            ImGui::SameLine();
+            if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
+
+            ImGui::EndPopup();
+        }
+
+        // Add each objects to the list
+        for (int n = 0; n < mScene.GetObjectCount(); n++) {
+            ImGui::SetItemAllowOverlap();
+            ImGui::SetCursorPos(ImVec2(8, n * 25 + 20 + 35));
+
+            Object* obj = mScene.GetObjects()[n];
+
+            // Create hidden id for the checkbox.
+            char buf[32];
+
+            // Hidden id for the checkbox
+            sprintf(buf, "##Show %d", n + 1);
+
+            // Checkbox to show and hide object.
+            if (ImGui::Checkbox(buf, &obj->show)) {
+                mRedrawThisFrame = true;
+                if (!obj->show) mSelectedObject = -1;
+            }
+
+            ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 3 + 35));
+
+            // Create tag for the object (needs an id so that each label is unique)
+            sprintf(buf, (std::string("##object_id_") + std::to_string(mScene.GetObjectID(obj))).c_str(), n + 1);
+
+            // Set currently selected object.
+            if (ImGui::Selectable(buf, mSelectedObject == n)) {
+                mSelectedObject = n;
+                if (mLookAtSelected) mRedrawThisFrame = true;
+            }
+
+            // Draw label
+            ImGui::SameLine();
+            ImGui::Text(obj->name.c_str());
+        }
+
+        ImGui::End();
+    }
+
+    void UIObjectProperties() {
+        ImGui::Begin("Object Properties");
+
+        // Make sure an object is selected
+        if (mSelectedObject >= 0) {
+            Object* obj = mScene.GetObjects()[mSelectedObject];
+
+            char buffer[32];
+            sprintf_s(buffer, obj->name.c_str(), obj->name.length());
+
+            ImGui::InputText("Name", buffer, 32);
+
+            Vector3f position = obj->GetPosition();
+            Vector3f rotation = obj->GetRotation();
+            Vector3f scale = obj->GetScale();
+
+            if (ImGui::DragFloat3("Position (x, y, z)", (float*)&position, 0.01)) {
+                mRedrawThisFrame = true;
+                obj->SetPosition(position);
+            }
+
+            if (obj->GetType() != ObjectType::Sphere) {
+                if (ImGui::DragFloat3("Rotation (x, y, z)", (float*)&rotation, 1)) {
+                    mRedrawThisFrame = true;
+                    rotation.x = fmod(rotation.x, 360);
+                    rotation.y = fmod(rotation.y, 360);
+                    rotation.z = fmod(rotation.z, 360);
+                    obj->SetRotation(rotation);
+                }
+            }
+
+            if (obj->GetType() == ObjectType::Sphere) {
+                if (ImGui::DragFloat("Radius", (float*)&scale.x, 0.01, 0.01, 100)) {
+                    mRedrawThisFrame = true;
+                    obj->SetScale(scale);
+                }
+            }
+            else if (obj->GetType() == ObjectType::DivergingLens) {
+                DivergingLens* lens = (DivergingLens*)obj;
+                float width = lens->GetWidth();
+                float curvature = lens->GetCurvature();
+
+                if (ImGui::DragFloat("Scale", (float*)&scale.x, 0.01, 0.01, 100)) {
+                    mRedrawThisFrame = true;
+                    if (scale.x <= 0) scale.x = 0.01;
+                    obj->SetScale(scale);
+                }
+                if (ImGui::DragFloat("Thickness", (float*)&width, 0.01, 0.01, 1)) {
+                    mRedrawThisFrame = true;
+                    if (width <= 0) width = 0.01;
+                    if (width > 1) width = 1;
+                    lens->SetWidth(width);
+                }
+                if (ImGui::DragFloat("Curvature", (float*)&curvature, 0.01, 0.01, 2)) {
+                    mRedrawThisFrame = true;
+                    if (curvature <= 0) curvature = 0.01;
+                    if (curvature > 2) curvature = 2;
+                    lens->SetCurvature(curvature);
+                }
+            }
+            else if (obj->GetType() == ObjectType::ConvergingLens) {
+                ConvergingLens* lens = (ConvergingLens*)obj;
+                float width = lens->GetWidth();
+
+                if (ImGui::DragFloat("Scale", (float*)&scale.x, 0.01, 0.01, 100)) {
+                    mRedrawThisFrame = true;
+                    if (scale.x <= 0) scale.x = 0.01;
+                    obj->SetScale(scale);
+                }
+                if (ImGui::DragFloat("Thickness", (float*)&width, 0.01, 0.01, 1)) {
+                    mRedrawThisFrame = true;
+                    if (width <= 0) width = 0.01;
+                    if (width > 1) width = 1;
+                    lens->SetWidth(width);
+                }
+            }
+            else {
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.45);
+                if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01, 0.01, 100)) {
+
+                    if (scale.x <= 0) scale.x = 0.01;
+                    if (scale.y <= 0) scale.y = 0.01;
+                    if (scale.z <= 0) scale.z = 0.01;
+
+                    mRedrawThisFrame = true;
+                    if (obj->lockAspectRatio) {
+                        Vector3f difference = scale - obj->GetScale();
+                        for (int i = 0; i < 3; i++) {
+                            if (difference[i] != 0) {
+                                float factor = scale[i] / obj->GetScale()[i];
+                                scale = obj->GetScale() * factor;
+                            }
+                        }
+                    }
+                    obj->SetScale(scale);
+                }
+                ImGui::PopItemWidth();
+                ImGui::SameLine();
+                ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() * 0.65 - 14, ImGui::GetCursorPosY()));
+                ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 + 10);
+                ImGui::Checkbox("Lock aspect ratio", &obj->lockAspectRatio);
+                ImGui::PopItemWidth();
+            }
+
+
+            obj->name = std::string(buffer);
+
+            if (ImGui::Button("Delete")) {
+                ImGui::OpenPopup("Delete");
+            }
+
+            if (ImGui::BeginPopup("Delete")) {
+                ImGui::Text("Are you sure?");
+                if (ImGui::Button("Yes")) {
+                    mScene.RemoveObject(obj);
+                    mSelectedObject--;
+                    mRedrawThisFrame = true;
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+                ImGui::EndPopup();
+            }
+
+        }
+        else {
+            ImGui::Text("Select an object to edit it's properties.");
+        }
+        ImGui::End();
+    }
+
+    void UIMaterialProperties() {
+        ImGui::Begin("Material Editor");
+
+        // Make sure an object is selected
+        if (mSelectedObject >= 0) {
+            Object* obj = mScene.GetObjects()[mSelectedObject];
+            Material* material = &obj->material;
+
+            const char* presets[] = { "Paper", "Plastic", "Metal", "Glass", "FrostedGlass", "Light" };
+            std::string currentPreset = "";
+            for (int i = 0; i < IM_ARRAYSIZE(presets); i++) {
+                if (*material == Material::LoadFromPreset((MaterialPreset)i)) {
+                    currentPreset = presets[i];
+                }
+            }
+            if (currentPreset == "") currentPreset = "Custom";
+            if (ImGui::BeginCombo("Preset", currentPreset.c_str())) {
+                for (int i = 0; i < IM_ARRAYSIZE(presets); i++) {
+                    bool selected = ((int)material->materialType == i);
+                    if (ImGui::Selectable(presets[i], selected)) {
+                        // Change material type
+                        *material = Material::LoadFromPreset((MaterialPreset)i);
+                        mRedrawThisFrame = true;
+                    }
+                    if (selected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+
+            const char* materials[] = { "Lambertian", "Specular", "Glass" };
+            // Pass in the preview value visible before opening the combo (it could be anything)
+            const char* comboText = materials[(int)material->materialType];
+            if (ImGui::BeginCombo("Material Type", comboText)) {
+                for (int i = 0; i < IM_ARRAYSIZE(materials); i++) {
+                    bool selected = ((int)material->materialType == i);
+                    if (ImGui::Selectable(materials[i], selected)) {
+                        // Change material type
+                        if ((MaterialType)i != MaterialType::Lambertian) material->emitted = 0;
+                        material->materialType = (MaterialType)i;
+                        mRedrawThisFrame = true;
+                    }
+
+                    if (selected) ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndCombo();
+            }
+
+            mRedrawThisFrame |= ImGui::ColorEdit3("Colour", (float*)&material->colour);
+            if (material->materialType == MaterialType::Lambertian) {
+                mRedrawThisFrame |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.01, 0, 1000);
+                if (material->emitted <= 0) material->emitted = 0.01;
+            }
+            // TODO: albedo
+            if (material->materialType == MaterialType::Glass) {
+                mRedrawThisFrame |= ImGui::SliderFloat("Index of Refraction", &material->refractiveIndex, 1, 2);
+                if (material->refractiveIndex < 1) material->refractiveIndex = 1;
+                if (material->refractiveIndex > 2) material->refractiveIndex = 2;
+            }
+            if (material->materialType != MaterialType::Lambertian) {
+                mRedrawThisFrame |= ImGui::DragFloat("Roughness", &material->roughness, 1, 0, 990);
+                if (material->roughness < 1) material->roughness = 1;
+                if (material->roughness < 990) material->roughness = 990;
+            }
+        }
+        else {
+            ImGui::Text("Select an object to edit it's material.");
+        }
+        ImGui::End();
+    }
+
+    void UIRenderSettings() {
+        ImGui::Begin("Render Settings");
+        if (ImGui::BeginTabBar("Render Settings Tab Bar")) {
+            if (ImGui::BeginTabItem("Preview")) {
+                const char* modes[] = { "Ray Tracer", "Depth Buffer", "Normals" };
+                // Pass in the preview value visible before opening the combo (it could be anything)
+                const char* comboText = modes[(int)mPreviewRenderSettings.mode];
+                if (ImGui::BeginCombo("Rendering Mode", comboText)) {
+                    for (int i = 0; i < IM_ARRAYSIZE(modes); i++) {
+                        bool selected = ((int)mPreviewRenderSettings.mode == i);
+                        if (ImGui::Selectable(modes[i], selected)) {
+                            // Change material type
+                            mPreviewRenderSettings.mode = (RenderMode)i;
+                            mRedrawThisFrame = true;
+                        }
+
+                        if (selected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+                mRedrawThisFrame |= ImGui::Checkbox("Fast Mode", &mPreviewRenderSettings.fastMode);
+
+                ImGui::NewLine();
+
+                mRedrawThisFrame |= ImGui::DragInt("Max Bounce Depth", &mPreviewRenderSettings.maxDepth, 1, 1, 1000);
+                if (mPreviewRenderSettings.maxDepth < 1) mPreviewRenderSettings.maxDepth = 1;
+                if (mPreviewRenderSettings.maxDepth > 1000) mPreviewRenderSettings.maxDepth = 1000;
+
+                mRedrawThisFrame |= ImGui::DragInt("Samples Per Frame", &mPreviewRenderSettings.samples, 0.5, 1, 10);
+                if (mPreviewRenderSettings.samples < 1) mPreviewRenderSettings.samples = 1;
+                if (mPreviewRenderSettings.samples > 10) mPreviewRenderSettings.samples = 10;
+
+                mRedrawThisFrame |= ImGui::DragInt("Threads", &mPreviewRenderSettings.numThreads, 1, 1, 30);
+                if (mPreviewRenderSettings.numThreads < 1) mPreviewRenderSettings.numThreads = 1;
+                if (mPreviewRenderSettings.numThreads > 30) mPreviewRenderSettings.numThreads = 30;
+
+                if (ImGui::ColorEdit3("Ambient Light Colour", (float*)&mPreviewRenderSettings.ambientLight)) {
+                    mRedrawThisFrame = true;
+                    mOutputRenderSettings.ambientLight = mPreviewRenderSettings.ambientLight;
+                }
+
+                mRedrawThisFrame |= ImGui::Checkbox("Checkerboard", &mPreviewRenderSettings.checkerboard);
+                mRedrawThisFrame |= ImGui::Checkbox("Explicit Light Sampling", &mPreviewRenderSettings.directLightSampling);
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Render")) {
+                char name[32];
+                sprintf_s(name, mOutputImageName.c_str(), mOutputImageName.length());
+                std::ifstream file(mOutputImageDirectory + "\\" + mOutputImageName + ".bmp");
+                bool validName = !file.good();
+                if (!validName) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                ImGui::InputText("Name", name, 32);
+                if (!validName) ImGui::PopStyleColor();
+                mOutputImageName = name;
+
+                char dir[100];
+                sprintf_s(dir, mOutputImageDirectory.c_str(), mOutputImageDirectory.length());
+                bool validDir = std::filesystem::exists(mOutputImageDirectory);
+                if (!validDir) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+                ImGui::InputText("File Path", dir, 100);
+                if (!validDir) ImGui::PopStyleColor();
+                mOutputImageDirectory = dir;
+
+                if (ImGui::Button("Browse for directory")) {
+                    GetDirectory(mOutputImageDirectory, mOutputImageDirectory);
+                }
+
+                ImGui::Checkbox("Open directory when done", &mOpenDirectoryOnComplete);
+                ImGui::Checkbox("Open file when done", &mOpenFileOnComplete);
+
+                if (ImGui::Button("Render Image")) {
+                    if (validName && validDir) RenderToImage();
+                }
+
+                if ((!validName || !validDir) && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
+
+                ImGui::NewLine();
+
+                const char* modes[] = { "Ray Tracer", "Depth Buffer", "Normals" };
+                // Pass in the preview value visible before opening the combo (it could be anything)
+                const char* comboText = modes[(int)mPreviewRenderSettings.mode];
+                if (ImGui::BeginCombo("Rendering Mode", comboText)) {
+                    for (int i = 0; i < IM_ARRAYSIZE(modes); i++) {
+                        bool selected = ((int)mPreviewRenderSettings.mode == i);
+                        if (ImGui::Selectable(modes[i], selected)) {
+                            // Change material type
+                            mPreviewRenderSettings.mode = (RenderMode)i;
+                        }
+
+                        if (selected) ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::Checkbox("Fast Mode", &mPreviewRenderSettings.fastMode);
+
+                ImGui::NewLine();
+
+                int* res = new int[2]{ (int)mOutputRenderSettings.resolution.x, (int)mOutputRenderSettings.resolution.y };
+                ImGui::InputInt2("Resolution", res);
+                if (res[0] > 0) mOutputRenderSettings.resolution.x = res[0];
+                if (res[1] > 0) mOutputRenderSettings.resolution.y = res[1];
+
+                ImGui::DragInt("Max Bounce Depth", &mOutputRenderSettings.maxDepth, 1, 1, 100);
+                if (mOutputRenderSettings.maxDepth < 1) mOutputRenderSettings.maxDepth = 1;
+                if (mOutputRenderSettings.maxDepth > 100) mOutputRenderSettings.maxDepth = 100;
+
+                ImGui::DragInt("Samples Per Frame", &mOutputRenderSettings.samples, 1, 1, 10000);
+                if (mOutputRenderSettings.samples < 1) mOutputRenderSettings.samples = 1;
+                if (mOutputRenderSettings.samples > 10000) mOutputRenderSettings.samples = 10000;
+
+                ImGui::DragInt("Threads", &mPreviewRenderSettings.numThreads, 1, 1, 30);
+                if (mOutputRenderSettings.numThreads < 1) mOutputRenderSettings.numThreads = 1;
+                if (mOutputRenderSettings.numThreads > 30) mOutputRenderSettings.numThreads = 30;
+
+                ImGui::ColorEdit3("Ambient Light Colour", (float*)&mOutputRenderSettings.ambientLight);
+                ImGui::Checkbox("Checkerboard", &mOutputRenderSettings.checkerboard);
+                ImGui::Checkbox("Explicit Light Sampling", &mOutputRenderSettings.directLightSampling);
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+
+        ImGui::End();
+    }
+
+    void UIViewport() {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::Begin("Scene");
+        ImGui::SetCursorPos({ 0, 0 });
+
+        ImGui::SetItemAllowOverlap();
+
+        SDL_Point size;
+        SDL_QueryTexture(mOutputTexture->GetRawTexture(), NULL, NULL, &size.x, &size.y);
+
+        // Scale texture to fit in viewport
+        float scale = (ImGui::GetWindowWidth()) / size.x;
+        if (scale * size.y > ImGui::GetWindowHeight()) scale = (ImGui::GetWindowHeight()) / size.y;
+
+        // Get position of top left corner of image
+        ImVec2 textureTopLeftInWindow = ImGui::GetCursorScreenPos();
+
+        // Add the texture
+        ImGui::Image((void*)(intptr_t)mOutputTexture->GetRawTexture(), ImVec2(size.x * scale, size.y * scale));
+
+        mMouseInViewport = ImGui::IsWindowHovered();
+        mViewportTopLeft = { textureTopLeftInWindow.x, textureTopLeftInWindow.y };
+        mViewportBottomRight = { textureTopLeftInWindow.x + size.x * scale, textureTopLeftInWindow.y + size.y * scale };
+
+        ImGui::End();
+        ImGui::PopStyleVar();
+    }
+
+    void UIRayVisualization() {
+        ImGui::Begin("Ray Visualization");
+        ImGui::Checkbox("Show visualization", &mRayVisualizationSettings.enable);
+
+        ImGui::Checkbox("Ignore sky", &mRayVisualizationSettings.ignoreSky);
+        ImGui::SameLine();
+        ImGui::Checkbox("Ignore ground", &mRayVisualizationSettings.ignoreGround);
+
+        ImGui::Checkbox("Shorten infinite rays", &mRayVisualizationSettings.shortenRays);
+        ImGui::SameLine();
+        ImGui::SetCursorPos(ImVec2(160, ImGui::GetCursorPosY()));
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
+        ImGui::DragFloat("Shortened ray length", &mRayVisualizationSettings.shortenedRayLength, 0.01, 0.01, mRayVisualizationSettings.maxDistance);
+        if (mRayVisualizationSettings.shortenedRayLength <= 0) mRayVisualizationSettings.shortenedRayLength = 0.01;
+        if (mRayVisualizationSettings.shortenedRayLength > mRayVisualizationSettings.shortenedRayLength) mRayVisualizationSettings.shortenedRayLength = mRayVisualizationSettings.maxDistance;
+
+        ImGui::PopItemWidth();
+
+        ImGui::Checkbox("Update regularly", &mRayVisualizationSettings.updateRegularly);
+        ImGui::SameLine();
+        ImGui::SetCursorPos(ImVec2(160, ImGui::GetCursorPosY()));
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
+        ImGui::DragInt("Update Frames", &mRayVisualizationSettings.framesPerUpdate, 1, 1, 10);
+        if (mRayVisualizationSettings.framesPerUpdate <= 0) mRayVisualizationSettings.framesPerUpdate = 1;
+        if (mRayVisualizationSettings.framesPerUpdate > 10) mRayVisualizationSettings.shortenedRayLength = 10;
+
+        ImGui::PopItemWidth();
+
+        ImGui::DragInt("Initial rays cast", &mRayVisualizationSettings.initialRays, 1, 1, 100);
+        if (mRayVisualizationSettings.initialRays <= 0) mRayVisualizationSettings.initialRays = 1;
+        if (mRayVisualizationSettings.initialRays > 100) mRayVisualizationSettings.initialRays = 100;
+
+        ImGui::DragInt("Max bounce depth", &mRayVisualizationSettings.maxBounceDepth, 1, 1, 100);
+        if (mRayVisualizationSettings.maxBounceDepth <= 0) mRayVisualizationSettings.maxBounceDepth = 1;
+        if (mRayVisualizationSettings.maxBounceDepth > 100) mRayVisualizationSettings.maxBounceDepth = 100;
+
+        ImGui::DragFloat("Max distance", &mRayVisualizationSettings.maxDistance, 0.01, 0.01, 1000);
+        if (mRayVisualizationSettings.framesPerUpdate <= 0) mRayVisualizationSettings.framesPerUpdate = 0.01;
+        if (mRayVisualizationSettings.framesPerUpdate > 1000) mRayVisualizationSettings.shortenedRayLength = 1000;
+
+        ImGui::Checkbox("Same colour", &mRayVisualizationSettings.sameColour);
+        ImGui::SameLine();
+        ImGui::SetCursorPos(ImVec2(160, ImGui::GetCursorPosY()));
+        ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
+        ImGui::ColorEdit3("Colour", (float*)&mRayVisualizationSettings.lineColour);
+        ImGui::PopItemWidth();
+
+        if (ImGui::Button("Generate Rays")) GenerateVisualization();
+        ImGui::End();
+    }
+
     void UpdateImGui() {
         // ImGui stuff (from example)
         ImGui_ImplSDLRenderer_NewFrame();
@@ -605,558 +1203,15 @@ public:
         // Enable docking
         ImGui::DockSpaceOverViewport();
 
-        // Menu bar
-        {
-            if (ImGui::BeginMainMenuBar()) {
-                if (ImGui::BeginMenu("File")) {
-                    if (ImGui::MenuItem("New")) {
-                        New();
-                    }
-                    if (ImGui::MenuItem("Save")) {
-                        Save();
-                    }
-                    if (ImGui::MenuItem("Save As")) {
-                        SaveSceneAs();
-                    }
-                    if (ImGui::MenuItem("Open")) {
-                        OpenScene();
-                    }
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("Interface")) {
-                    if (ImGui::Checkbox("Dark Mode", &mDarkMode)) {
-                        SetImGuiStyle(mDarkMode);
-                    }
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("Testing")) {
-                    if (ImGui::Button("Begin Tests")) ImGui::OpenPopup("Testing");
-                    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y / 2), ImGuiCond_Always, ImVec2(0.5, 0.5));
-                    if (ImGui::BeginPopup("Testing")) {
-                        ImGui::PushFont(mMonoFont);
-                        RunTests();
-                        ImGui::PopFont();
-                        ImGui::EndPopup();
-                    }
-                    ImGui::EndMenu();
-                }
-
-                ImGui::EndMainMenuBar();
-            }
-        }
-
-        // FPS overlay
-        {
-            ImGui::SetNextWindowBgAlpha(0.9f);
-            ImGui::Begin("Overlay", (bool*)1, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking);
-            ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::Text("Renderer: %.3f ms/frame (%.1f FPS)", mRendererFps * 1000, 1000/(mRendererFps * 1000));
-
-            ImGui::End();
-        }
-
-        // Camera position
-        {
-            ImGui::Begin("Camera");
-            Vector3f position = mScene.camera.GetPosition();
-
-            if (ImGui::DragFloat3("Position", (float*)&position, 0.01)) {
-                mRedrawThisFrame = true;
-                mScene.camera.SetPosition(position);
-            }
-
-            mRedrawThisFrame |= ImGui::Checkbox("Look at selected object", &mLookAtSelected);
-            if (ImGui::Button("Reset view")) {
-                mRedrawThisFrame = true;
-                mScene.camera.LookAt(mScene.camera.GetPosition() + Vector3f(0, 0, -1));
-            }
-
-            ImGui::End();
-        }
-
-        // Object selection window
-        {
-            ImGui::Begin("Objects");
-            if (ImGui::Button("Add New Object", { ImGui::GetWindowWidth(), 20 })) {
-                ImGui::OpenPopup("Add Object");
-            }
-
-            // New object pop-up
-            ImGui::SetNextWindowPos(ImGui::GetWindowPos(), ImGuiCond_Always, ImVec2(1, 0));
-            if (ImGui::BeginPopup("Add Object")) {
-
-                char nameBuffer[30];
-                sprintf_s(nameBuffer, mNewObjectName.c_str(), 30);
-                ImGui::InputText("Name", nameBuffer, 30);
-                mNewObjectName = nameBuffer;
-
-                const char* objectTypes[] = { "Sphere", "Cube", "Prism", "Diverging Lens", "Converging Lens", "3D Model" };
-                if (ImGui::BeginCombo("Object Type", objectTypes[mNewObjectType])) {
-                    for (int i = 0; i < IM_ARRAYSIZE(objectTypes); i++) {
-                        const bool selected = (mNewObjectType == i);
-                        if (ImGui::Selectable(objectTypes[i], selected)) {
-                            mNewObjectType = i;
-                        }
-
-                        if (selected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-
-                bool valid = true;
-
-                if (objectTypes[mNewObjectType] == "3D Model") {
-                    char buffer[100];
-                    sprintf_s(buffer, mNewObjectPath.c_str(), mNewObjectPath.length());
-                    std::ifstream file(mNewObjectPath);
-                    valid = file.good();
-                    if (!valid) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-                    ImGui::InputText("File Path", buffer, 100);
-                    if (!valid) ImGui::PopStyleColor();
-                    mNewObjectPath = buffer;
-
-                    if (ImGui::Button("Browse for file")) {
-                        nfdchar_t* path = NULL;
-                        nfdresult_t result = NFD_OpenDialog("obj", NULL, &path);
-                        if (result == nfdresult_t::NFD_OKAY) mNewObjectPath = AbsolutePathToRelative(path);
-                    }
-                }
-
-                if (ImGui::Button("Ok") && valid) {
-                    ImGui::CloseCurrentPopup();
-                    Object* object;
-
-                    if (objectTypes[mNewObjectType] == "Sphere") {
-                        object = (Object*) new Sphere(Vector3f(), 1, Material());
-                    }
-                    else if (objectTypes[mNewObjectType] == "Cube") {
-                        object = (Object*) new Mesh({ 0, 0, 0 }, "Models/Cube.obj", Material());
-                    }
-                    else if (objectTypes[mNewObjectType] == "Prism") {
-                        object = (Object*) new Mesh({ 0, 0, 0 }, "Models/Prism.obj", Material());
-                    }
-                    else if (objectTypes[mNewObjectType] == "3D Model") {
-                        object = (Object*) new Mesh({ 0, 0, 0 }, mNewObjectPath.c_str(), Material());
-                    }
-                    else if (objectTypes[mNewObjectType] == "Diverging Lens") {
-                        object = (Object*) new DivergingLens({ 0, 0, 0 }, 0.11, 1.48, Material());
-                    }
-                    else if (objectTypes[mNewObjectType] == "Converging Lens") {
-                        object = (Object*) new ConvergingLens({ 0, 0, 0 }, 0.5, Material());
-                    }
-
-                    object->material = Material::LoadFromPreset(MaterialPreset::Paper);
-
-                    mRedrawThisFrame = true;
-                    mScene.AddObject(mNewObjectName.c_str(), object);
-                    mSelectedObject = mScene.GetObjectCount() - 1;
-                    mNewObjectName = "Object " + std::to_string(mScene.GetObjectCount());
-                    mNewObjectPath = "";
-                    mNewObjectType = 0;
-                }
-                if (!valid && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
-
-                ImGui::SameLine();
-                if (ImGui::Button("Close")) ImGui::CloseCurrentPopup();
-
-                ImGui::EndPopup();
-            }
-
-            // Add each objects to the list
-            for (int n = 0; n < mScene.GetObjectCount(); n++) {
-                ImGui::SetItemAllowOverlap();
-                ImGui::SetCursorPos(ImVec2(8, n * 25 + 20 + 35));
-
-                Object* obj = mScene.GetObjects()[n];
-
-                // Create hidden id for the checkbox.
-                char buf[32];
-
-                // Hidden id for the checkbox
-                sprintf(buf, "##Show %d", n + 1);
-
-                // Checkbox to show and hide object.
-                if (ImGui::Checkbox(buf, &obj->show)) {
-                    mRedrawThisFrame = true;
-                    if (!obj->show) mSelectedObject = -1;
-                }
-
-                ImGui::SetCursorPos(ImVec2(35, n * 25 + 20 + 3 + 35));
-
-                // Create tag for the object (needs an id so that each label is unique)
-                sprintf(buf, (std::string("##object_id_") + std::to_string(mScene.GetObjectID(obj))).c_str(), n + 1);
-
-                // Set currently selected object.
-                if (ImGui::Selectable(buf, mSelectedObject == n)) {
-                    mSelectedObject = n;
-                    if (mLookAtSelected) mRedrawThisFrame = true;
-                }
-
-                // Draw label
-                ImGui::SameLine();
-                ImGui::Text(obj->name.c_str());
-            }
-
-            ImGui::End();
-        }
-
-        // Current object properties
-        {
-            ImGui::Begin("Object Properties");
-
-            // Make sure an object is selected
-            if (mSelectedObject >= 0) {
-                Object* obj = mScene.GetObjects()[mSelectedObject];
-
-                char buffer[32];
-                sprintf_s(buffer, obj->name.c_str(), obj->name.length());
-
-                ImGui::InputText("Name", buffer, 32);
-
-                Vector3f position = obj->GetPosition();
-                Vector3f rotation = obj->GetRotation();
-                Vector3f scale = obj->GetScale();
-
-                if (ImGui::DragFloat3("Position (x, y, z)", (float*)&position, 0.01)) {
-                    mRedrawThisFrame = true;
-                    obj->SetPosition(position);
-                }
-
-                if (obj->GetType() != ObjectType::Sphere) {
-                    if (ImGui::DragFloat3("Rotation (x, y, z)", (float*)&rotation, 1)) {
-                        mRedrawThisFrame = true;
-                        rotation.x = fmod(rotation.x, 360);
-                        rotation.y = fmod(rotation.y, 360);
-                        rotation.z = fmod(rotation.z, 360);
-                        obj->SetRotation(rotation);
-                    }
-                }
-
-                if (obj->GetType() == ObjectType::Sphere) {
-                    if (ImGui::DragFloat("Radius", (float*)&scale.x, 0.01, 0.01, 100)) {
-                        mRedrawThisFrame = true;
-                        obj->SetScale(scale);
-                    }
-                }
-                else if (obj->GetType() == ObjectType::DivergingLens) {
-                    DivergingLens* lens = (DivergingLens*)obj;
-                    float width = lens->GetWidth();
-                    float curvature = lens->GetCurvature();
-
-                    if (ImGui::DragFloat("Scale", (float*)&scale.x, 0.01, 0.01, 100)) {
-                        mRedrawThisFrame = true;
-                        obj->SetScale(scale);
-                    }
-                    if (ImGui::DragFloat("Thickness", (float*)&width, 0.01, 0.01, 1)) {
-                        mRedrawThisFrame = true;
-                        lens->SetWidth(width);
-                    }
-                    if (ImGui::DragFloat("Curvature", (float*)&curvature, 0.01, 0.01, 2)) {
-                        mRedrawThisFrame = true;
-                        lens->SetCurvature(curvature);
-                    }
-                }
-                else if (obj->GetType() == ObjectType::ConvergingLens) {
-                    ConvergingLens* lens = (ConvergingLens*)obj;
-                    float width = lens->GetWidth();
-
-                    if (ImGui::DragFloat("Scale", (float*)&scale.x, 0.01, 0.01, 100)) {
-                        mRedrawThisFrame = true;
-                        obj->SetScale(scale);
-                    }
-                    if (ImGui::DragFloat("Thickness", (float*)&width, 0.01, 0.01, 1)) {
-                        mRedrawThisFrame = true;
-                        lens->SetWidth(width);
-                    }
-                }
-                else {
-                    ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.45);
-                    if (ImGui::DragFloat3("Scale", (float*)&scale, 0.01, 0.01, 100)) {
-                        mRedrawThisFrame = true;
-                        if (obj->lockAspectRatio) {
-                            Vector3f difference = scale - obj->GetScale();
-                            for (int i = 0; i < 3; i++) {
-                                if (difference[i] != 0) {
-                                    float factor = scale[i] / obj->GetScale()[i];
-                                    scale = obj->GetScale() * factor;
-                                }
-                            }
-                        }
-                        obj->SetScale(scale);
-                    }
-                    ImGui::PopItemWidth();
-                    ImGui::SameLine();
-                    ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() * 0.65 - 14, ImGui::GetCursorPosY()));
-                    ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 + 10);
-                    ImGui::Checkbox("Lock aspect ratio", &obj->lockAspectRatio);
-                    ImGui::PopItemWidth();
-                }
-
-
-                obj->name = std::string(buffer);
-
-                if (ImGui::Button("Delete")) {
-                    ImGui::OpenPopup("Delete");
-                }
-
-                if (ImGui::BeginPopup("Delete")) {
-                    ImGui::Text("Are you sure?");
-                    if (ImGui::Button("Yes")) {
-                        mScene.RemoveObject(obj);
-                        mSelectedObject--;
-                        mRedrawThisFrame = true;
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
-                    ImGui::EndPopup();
-                }
-
-            }
-            else {
-                ImGui::Text("Select an object to edit it's properties.");
-            }
-            ImGui::End();
-        }
-
-        // Object material properties
-        {
-            ImGui::Begin("Material Editor");
-
-            // Make sure an object is selected
-            if (mSelectedObject >= 0) {
-                Object* obj = mScene.GetObjects()[mSelectedObject];
-                Material* material = &obj->material;
-
-                const char* presets[] = { "Paper", "Plastic", "Metal", "Glass", "FrostedGlass", "Light" };
-                std::string currentPreset = "";
-                for (int i = 0; i < IM_ARRAYSIZE(presets); i++) {
-                    if (*material == Material::LoadFromPreset((MaterialPreset)i)) {
-                        currentPreset = presets[i];
-                    }
-                }
-                if (currentPreset == "") currentPreset = "Custom";
-                if (ImGui::BeginCombo("Preset", currentPreset.c_str())) {
-                    for (int i = 0; i < IM_ARRAYSIZE(presets); i++) {
-                        bool selected = ((int)material->materialType == i);
-                        if (ImGui::Selectable(presets[i], selected)) {
-                            // Change material type
-                            *material = Material::LoadFromPreset((MaterialPreset)i);
-                            mRedrawThisFrame = true;
-                        }
-                        if (selected) ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-
-                const char* materials[] = { "Lambertian", "Specular", "Glass" };
-                // Pass in the preview value visible before opening the combo (it could be anything)
-                const char* comboText = materials[(int)material->materialType]; 
-                if (ImGui::BeginCombo("Material Type", comboText)) {
-                    for (int i = 0; i < IM_ARRAYSIZE(materials); i++) {
-                        bool selected = ((int)material->materialType == i);
-                        if (ImGui::Selectable(materials[i], selected)) {
-                            // Change material type
-                            if ((MaterialType)i != MaterialType::Lambertian) material->emitted = 0;
-                            material->materialType = (MaterialType)i;
-                            mRedrawThisFrame = true;
-                        }
-
-                        if (selected) ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-
-                mRedrawThisFrame |= ImGui::ColorEdit3("Colour", (float*)&material->colour);
-                if (material->materialType == MaterialType::Lambertian) mRedrawThisFrame |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.1, 0, 1000);
-                // TODO: albedo
-                if (material->materialType == MaterialType::Glass) mRedrawThisFrame |= ImGui::SliderFloat("Index of Refraction", &material->refractiveIndex, 1, 2);
-                if (material->materialType != MaterialType::Lambertian) mRedrawThisFrame |= ImGui::DragFloat("Roughness", &material->roughness, 1, 0, 990);
-            }
-            else {
-                ImGui::Text("Select an object to edit it's material.");
-            }
-            ImGui::End();
-        }
-
-        // Render settings
-        {
-            ImGui::Begin("Render Settings");
-            if (ImGui::BeginTabBar("Render Settings Tab Bar")) {
-                if (ImGui::BeginTabItem("Preview")) {
-                    const char* modes[] = { "Ray Tracer", "Depth Buffer", "Normals" };
-                    // Pass in the preview value visible before opening the combo (it could be anything)
-                    const char* comboText = modes[(int)mPreviewRenderSettings.mode];
-                    if (ImGui::BeginCombo("Rendering Mode", comboText)) {
-                        for (int i = 0; i < IM_ARRAYSIZE(modes); i++) {
-                            bool selected = ((int)mPreviewRenderSettings.mode == i);
-                            if (ImGui::Selectable(modes[i], selected)) {
-                                // Change material type
-                                mPreviewRenderSettings.mode = (RenderMode)i;
-                                mRedrawThisFrame = true;
-                            }
-
-                            if (selected) ImGui::SetItemDefaultFocus();
-                        }
-                        ImGui::EndCombo();
-                    }
-                    mRedrawThisFrame |= ImGui::Checkbox("Fast Mode", &mPreviewRenderSettings.fastMode);
-
-                    ImGui::NewLine();
-
-                    mRedrawThisFrame |= ImGui::DragInt("Max Bounce Depth", &mPreviewRenderSettings.maxDepth, 1, 1, 1000);
-                    mRedrawThisFrame |= ImGui::DragInt("Samples Per Frame", &mPreviewRenderSettings.samples, 0.5, 1, 10);
-                    mRedrawThisFrame |= ImGui::DragInt("Threads", &mPreviewRenderSettings.numThreads, 1, 1, 30);
-
-                    if (ImGui::ColorEdit3("Ambient Light Colour", (float*)&mPreviewRenderSettings.ambientLight)) {
-                        mRedrawThisFrame = true;
-                        mOutputRenderSettings.ambientLight = mPreviewRenderSettings.ambientLight;
-                    }
-
-                    mRedrawThisFrame |= ImGui::Checkbox("Checkerboard", &mPreviewRenderSettings.checkerboard);
-                    mRedrawThisFrame |= ImGui::Checkbox("Explicit Light Sampling", &mPreviewRenderSettings.directLightSampling);
-                    ImGui::EndTabItem();
-                }
-                if (ImGui::BeginTabItem("Render")) {
-                    char name[32];
-                    sprintf_s(name, mOutputImageName.c_str(), mOutputImageName.length());
-                    std::ifstream file(mOutputImageDirectory + "\\" +  mOutputImageName + ".bmp");
-                    bool validName = !file.good();
-                    if (!validName) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-                    ImGui::InputText("Name", name, 32);
-                    if (!validName) ImGui::PopStyleColor();
-                    mOutputImageName = name;
-
-                    char dir[100];
-                    sprintf_s(dir, mOutputImageDirectory.c_str(), mOutputImageDirectory.length());
-                    bool validDir = std::filesystem::exists(mOutputImageDirectory);
-                    if (!validDir) ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-                    ImGui::InputText("File Path", dir, 100);
-                    if (!validDir) ImGui::PopStyleColor();
-                    mOutputImageDirectory = dir;
-
-                    if (ImGui::Button("Browse for directory")) {
-                        GetDirectory(mOutputImageDirectory, mOutputImageDirectory);
-                    }
-
-                    ImGui::Checkbox("Open directory when done", &mOpenDirectoryOnComplete);
-                    ImGui::Checkbox("Open file when done", &mOpenFileOnComplete);
-
-                    if (ImGui::Button("Render Image")) {
-                        if (validName && validDir) RenderToImage();
-                    }
-
-                    if ((!validName || !validDir) && ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_NotAllowed);
-
-                    ImGui::NewLine();
-
-                    const char* modes[] = { "Ray Tracer", "Depth Buffer", "Normals" };
-                    // Pass in the preview value visible before opening the combo (it could be anything)
-                    const char* comboText = modes[(int)mPreviewRenderSettings.mode];
-                    if (ImGui::BeginCombo("Rendering Mode", comboText)) {
-                        for (int i = 0; i < IM_ARRAYSIZE(modes); i++) {
-                            bool selected = ((int)mPreviewRenderSettings.mode == i);
-                            if (ImGui::Selectable(modes[i], selected)) {
-                                // Change material type
-                                mPreviewRenderSettings.mode = (RenderMode)i;
-                            }
-
-                            if (selected) ImGui::SetItemDefaultFocus();
-                        }
-                        ImGui::EndCombo();
-                    }
-                    ImGui::Checkbox("Fast Mode", &mPreviewRenderSettings.fastMode);
-
-                    ImGui::NewLine();
-
-                    int* res = new int[2] { (int)mOutputRenderSettings.resolution.x, (int)mOutputRenderSettings.resolution.y };
-                    ImGui::InputInt2("Resolution", res);
-                    if (res[0] > 0) mOutputRenderSettings.resolution.x = res[0];
-                    if (res[1] > 0) mOutputRenderSettings.resolution.y = res[1];
-                    delete res;
-
-                    ImGui::DragInt("Max Bounce Depth", &mOutputRenderSettings.maxDepth, 1, 1, 100);
-                    ImGui::DragInt("Samples Per Frame", &mOutputRenderSettings.samples, 1, 1, 10000);
-                    ImGui::DragInt("Threads", &mPreviewRenderSettings.numThreads, 1, 1, 30);
-                    ImGui::ColorEdit3("Ambient Light Colour", (float*)&mOutputRenderSettings.ambientLight);
-                    ImGui::Checkbox("Checkerboard", &mOutputRenderSettings.checkerboard);
-                    ImGui::Checkbox("Explicit Light Sampling", &mOutputRenderSettings.directLightSampling);
-                    ImGui::EndTabItem();
-                }
-                ImGui::EndTabBar();
-            }
-
-            ImGui::End();
-        }
-
-        // Viewport
-        {
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-            ImGui::Begin("Scene");
-            ImGui::SetCursorPos({ 0, 0 });
-
-            ImGui::SetItemAllowOverlap();
-
-            SDL_Point size;
-            SDL_QueryTexture(mOutputTexture->GetRawTexture(), NULL, NULL, &size.x, &size.y);
-
-            // Scale texture to fit in viewport
-            float scale = (ImGui::GetWindowWidth()) / size.x;
-            if (scale * size.y > ImGui::GetWindowHeight()) scale = (ImGui::GetWindowHeight()) / size.y;
-
-            // Get position of top left corner of image
-            ImVec2 textureTopLeftInWindow = ImGui::GetCursorScreenPos();
-
-            // Add the texture
-            ImGui::Image((void*)(intptr_t)mOutputTexture->GetRawTexture(), ImVec2(size.x * scale, size.y * scale));
-
-            mMouseInViewport = ImGui::IsWindowHovered();
-            mViewportTopLeft = { textureTopLeftInWindow.x, textureTopLeftInWindow.y };
-            mViewportBottomRight = { textureTopLeftInWindow.x + size.x * scale, textureTopLeftInWindow.y + size.y * scale };
-
-            ImGui::End();
-            ImGui::PopStyleVar();
-        }
-
-        // Ray visualization
-        {
-            ImGui::Begin("Ray Visualization");
-            ImGui::Checkbox("Show visualization", &mRayVisualizationSettings.enable);
-
-            ImGui::Checkbox("Ignore sky", &mRayVisualizationSettings.ignoreSky);
-            ImGui::SameLine();
-            ImGui::Checkbox("Ignore ground", &mRayVisualizationSettings.ignoreGround);
-
-            ImGui::Checkbox("Shorten infinite rays", &mRayVisualizationSettings.shortenRays);
-            ImGui::SameLine();
-            ImGui::SetCursorPos(ImVec2(160, ImGui::GetCursorPosY()));
-            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
-            ImGui::DragFloat("Shortened ray length", &mRayVisualizationSettings.shortenedRayLength, 0.01, 0.01, mRayVisualizationSettings.maxDistance);
-            ImGui::PopItemWidth();
-
-            ImGui::Checkbox("Update regularly", &mRayVisualizationSettings.updateRegularly);
-            ImGui::SameLine();
-            ImGui::SetCursorPos(ImVec2(160, ImGui::GetCursorPosY()));
-            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
-            ImGui::DragInt("Update Frames", &mRayVisualizationSettings.framesPerUpdate, 1, 1, 10);
-            ImGui::PopItemWidth();
-
-            ImGui::DragInt("Initial rays cast", &mRayVisualizationSettings.initialRays, 1, 0, 100);
-            ImGui::DragInt("Max bounce depth", &mRayVisualizationSettings.maxBounceDepth, 1, 0, 100);
-            ImGui::DragFloat("Max distance", &mRayVisualizationSettings.maxDistance, 0.01, 0.01, 1000);
-
-            ImGui::Checkbox("Same colour", &mRayVisualizationSettings.sameColour);
-            ImGui::SameLine();
-            ImGui::SetCursorPos(ImVec2(160, ImGui::GetCursorPosY()));
-            ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
-            ImGui::ColorEdit3("Colour", (float*)&mRayVisualizationSettings.lineColour);
-            ImGui::PopItemWidth();
-
-            if (ImGui::Button("Generate Rays")) GenerateVisualization();
-            ImGui::End();
-        }
+        UIMenuBar();
+        UIFpsOverlay();
+        UICamera();
+        UIObjectSelect();
+        UIObjectProperties();
+        UIMaterialProperties();
+        UIRenderSettings();
+        UIViewport();
+        UIRayVisualization();
 
         // Draw to the screen
         ImGui::Render();
