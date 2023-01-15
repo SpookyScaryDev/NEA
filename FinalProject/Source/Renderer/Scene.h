@@ -8,7 +8,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace Prototype {
+namespace rtos {
 
 // A scene owns a set of objects and a camera.
 class Scene {

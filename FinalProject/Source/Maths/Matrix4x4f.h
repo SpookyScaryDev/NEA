@@ -2,7 +2,7 @@
 
 #include <Maths/Vector3f.h>
 
-namespace Prototype {
+namespace rtos {
 
 class Matrix4x4f {
 public:

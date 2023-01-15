@@ -2,7 +2,7 @@
 
 #include <Maths/Vector3f.h>
 
-namespace Prototype {
+namespace rtos {
 
 Ray::Ray(const Vector3f& origin, const Vector3f& direction) :
     mOrigin(origin), 

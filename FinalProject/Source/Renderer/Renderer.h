@@ -10,7 +10,7 @@
 
 struct SDL_Renderer;
 
-namespace Prototype {
+namespace rtos {
 
 enum class RenderMode {
     RayTraced,

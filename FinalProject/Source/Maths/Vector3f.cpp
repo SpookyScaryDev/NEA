@@ -8,7 +8,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 
 Vector3f::Vector3f(float fx, float fy, float fz) :
     x(fx), y(fy), z(fz) {}

@@ -3,7 +3,7 @@
 #include <string>
 #include "nlohmann/json.hpp"
 
-namespace Prototype {
+namespace rtos {
 
 class Vector2f {
 public:

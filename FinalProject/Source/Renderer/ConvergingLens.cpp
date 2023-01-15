@@ -8,7 +8,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 
 	ConvergingLens::ConvergingLens(Vector3f position, float width, Material material) :
 		Object(position, material, ObjectType::ConvergingLens),

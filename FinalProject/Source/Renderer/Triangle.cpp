@@ -5,7 +5,7 @@
 #include <Maths/Vector3f.h>
 #include <Maths/Matrix4x4f.h>
 
-namespace Prototype {
+namespace rtos {
 
 Triangle::Triangle(Vector3f position, Vector3f verticies[3], Material material) :
 	Object(position, material, ObjectType::Triangle)

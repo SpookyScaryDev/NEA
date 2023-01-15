@@ -7,7 +7,7 @@
 
 #include <Error.h>
 
-namespace Prototype {
+namespace rtos {
 
 Texture::Texture(int width, int height) {
     mTextureData = SDL_CreateTexture(Application::GetApp()->GetRenderer()->GetRawRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height);

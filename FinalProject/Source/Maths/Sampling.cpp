@@ -7,7 +7,7 @@
 #include <Maths/Vector2f.h>
 #include <Maths/Vector3f.h>
 
-namespace Prototype {
+namespace rtos {
 
 namespace Sampling {
     Vector2f SampleBilinear(std::mt19937& rnd) {

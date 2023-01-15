@@ -7,7 +7,7 @@
 struct SDL_Texture;
 struct SDL_PixelFormat;
 
-namespace Prototype {
+namespace rtos {
 
 class Texture {
 public:

@@ -6,7 +6,7 @@
 #include <cmath>
 #include <math.h>
 
-namespace Prototype {
+namespace rtos {
 
 Matrix4x4f::Matrix4x4f() {
     for (int i = 0; i < 4; i++) {

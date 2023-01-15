@@ -7,7 +7,7 @@
 
 #include <Error.h>;
 
-namespace Prototype {
+namespace rtos {
 
 Application* Application::mApplication = nullptr;
 
@@ -39,7 +39,7 @@ Application* Application::GetApp() {
 
 void Application::Init(const char* name, int width, int height) {
     printf("************************************************************\n");
-    printf("Initializing Prototype:\n");
+    printf("Initializing rtos:\n");
     printf("************************************************************\n");
     printf("Application::Init: Initializing Subsystems\n");
 

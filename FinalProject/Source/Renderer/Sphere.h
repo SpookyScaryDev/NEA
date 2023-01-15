@@ -4,7 +4,7 @@
 #include <Maths/Ray.h>
 #include <Renderer/Material.h>
 
-namespace Prototype {
+namespace rtos {
 
 class Sphere : Object {
 public:

@@ -4,7 +4,7 @@
 
 #include <Error.h>
 
-namespace Prototype {
+namespace rtos {
 
 Window::Window() {
     mRawSDLWindow = nullptr;

@@ -9,7 +9,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 Object::Object(Vector3f position, Material material, ObjectType type) :
 	mPosition(position), material(material), mScale(Vector3f(1, 1, 1)) 
 {

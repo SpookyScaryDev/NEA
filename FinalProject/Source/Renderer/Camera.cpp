@@ -11,7 +11,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 
 Camera::Camera(float aspectRatio, float focalLength, Vector3f pos) {
 	Create(aspectRatio, focalLength, pos);

@@ -19,7 +19,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 
 nlohmann::json RenderSettings::ToJSON() {
     json data = json();

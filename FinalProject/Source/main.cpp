@@ -30,7 +30,7 @@
 
 #include <Error.h>
 
-using namespace Prototype;
+using namespace rtos;
 using json = nlohmann::json;
 
 struct RayVisualizationSettings {
@@ -970,7 +970,7 @@ public:
             mRedrawThisFrame |= ImGui::ColorEdit3("Colour", (float*)&material->colour);
             if (material->materialType == MaterialType::Lambertian) {
                 mRedrawThisFrame |= ImGui::DragFloat("Emitted", (float*)&material->emitted, 0.01, 0, 1000);
-                if (material->emitted <= 0) material->emitted = 0.01;
+                if (material->emitted < 0) material->emitted = 0;
             }
             // TODO: albedo
             if (material->materialType == MaterialType::Glass) {
@@ -1545,7 +1545,7 @@ public:
         }
 
         // Update the visualization.
-        if (mFrame % mRayVisualizationSettings.framesPerUpdate == 0 && mRayVisualizationSettings.updateRegularly) GenerateVisualization();
+        if (mRayVisualizationSettings.enable && mFrame % mRayVisualizationSettings.framesPerUpdate == 0 && mRayVisualizationSettings.updateRegularly) GenerateVisualization();
 
         // Set the scene as modified if changes were made.
         if (mRedrawThisFrame && !mLoadedSceneThisFrame) mScene.SetModified();
@@ -1584,9 +1584,10 @@ public:
 
         ConvertRenderedImageToTexture(mRenderedImage, mOutputTexture, mPreviewRenderSettings);
         if (mRayVisualizationSettings.enable) DrawRayVisualization();
-        DrawSelectedObjectOutline(mOutputTexture);
 
         GetUserInput();
+
+        if (mSelectedObject >= 0) DrawSelectedObjectOutline(mOutputTexture);
 
         // Draw the interface.
         GetRenderer()->Clear();

@@ -14,7 +14,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 
 Mesh::Mesh(Vector3f position, const char* filePath, Material material) :
 	Object(position, material, ObjectType::Mesh)
@@ -106,6 +106,7 @@ void Mesh::Update() {
 				mTransformedMax[i] += a < b ? b : a;
 			}
 		}
+		////////
 
 		mTransformedMin += mPosition;
 		mTransformedMax += mPosition;
@@ -113,7 +114,6 @@ void Mesh::Update() {
 		mCenter.x = (mTransformedMin.x + mTransformedMax.x) / 2;
 		mCenter.y = (mTransformedMin.y + mTransformedMax.y) / 2;
 		mCenter.z = (mTransformedMin.z + mTransformedMax.z) / 2;
-		////////
 
 		mRadius = (mTransformedMax - mTransformedMin).Magnitude() / 2;
 

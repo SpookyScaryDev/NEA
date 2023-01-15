@@ -8,7 +8,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 
 	DivergingLens::DivergingLens(Vector3f position, float width, float curvature, Material material) :
 		Object(position, material, ObjectType::DivergingLens)

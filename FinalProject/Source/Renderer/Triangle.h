@@ -4,7 +4,7 @@
 #include <Renderer/Object.h>
 #include <Maths/Vector3f.h>
 
-namespace Prototype {
+namespace rtos {
 
 	class Triangle : Object {
 	public:

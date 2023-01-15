@@ -14,7 +14,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 
 Material::Material(MaterialType type, Colour colour, float roughness, float refractiveIndex, float emitted) :
     materialType(type),
@@ -37,36 +37,36 @@ Material Material::LoadFromPreset(MaterialPreset preset) {
 
     switch (preset){
 
-    case Prototype::MaterialPreset::Paper:
+    case rtos::MaterialPreset::Paper:
         material.materialType = MaterialType::Lambertian;
         material.colour = Vector3f(1, 1, 1);
         break;
 
-    case Prototype::MaterialPreset::Plastic:
+    case rtos::MaterialPreset::Plastic:
         material.materialType = MaterialType::Glossy;
         material.colour = Vector3f(1, 0.2, 0.2);
         material.roughness = 950;
         break;
 
-    case Prototype::MaterialPreset::Metal:
+    case rtos::MaterialPreset::Metal:
         material.materialType = MaterialType::Glossy;
         material.colour = Vector3f(0.9, 0.9, 0.9);
         material.roughness = 0;
         break;
 
-    case Prototype::MaterialPreset::Glass:
+    case rtos::MaterialPreset::Glass:
         material.materialType = MaterialType::Glass;
         material.colour = Vector3f(1, 1, 1);
         material.roughness = 0;
         break;
 
-    case Prototype::MaterialPreset::FrostedGlass:
+    case rtos::MaterialPreset::FrostedGlass:
         material.materialType = MaterialType::Glass;
         material.colour = Vector3f(1, 1, 1);
         material.roughness = 20;
         break;
 
-    case Prototype::MaterialPreset::Light:
+    case rtos::MaterialPreset::Light:
         material.materialType = MaterialType::Lambertian;
         material.colour = Vector3f(1, 1, 1);
         material.emitted = 20;

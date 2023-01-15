@@ -15,7 +15,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 
 Scene::Scene() {}
 

@@ -3,7 +3,7 @@
 
 #include <Maths/Vector3f.h>
 
-namespace Prototype {
+namespace rtos {
 
 class Ray {
 public:

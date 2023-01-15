@@ -4,7 +4,7 @@
 #include <Renderer/Renderer.h>
 #include <string>
 
-namespace Prototype {
+namespace rtos {
 
 // Singleton which the app inherits from.
 class Application {

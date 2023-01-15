@@ -3,7 +3,7 @@
 #include <Maths/Vector2f.h>
 #include <Maths/Vector3f.h>
 
-namespace Prototype {
+namespace rtos {
 
 struct Line2D {
 	Vector2f start;

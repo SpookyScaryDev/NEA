@@ -105,6 +105,7 @@ IF EXIST Data\*.*\ (xcopy /Q /E /Y /I Data\*.* Binaries\Release-windows-x86_64 &
   <ItemGroup>
     <ClInclude Include="..\Vendor\imgui\backends\imgui_impl_sdl.h" />
     <ClInclude Include="..\Vendor\imgui\backends\imgui_impl_sdlrenderer.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Source\Application\Application.h" />
     <ClInclude Include="Source\Error.h" />
     <ClInclude Include="Source\Maths\Matrix4x4f.h" />
@@ -159,6 +160,12 @@ IF EXIST Data\*.*\ (xcopy /Q /E /Y /I Data\*.* Binaries\Release-windows-x86_64 &
     <ProjectReference Include="..\Vendor\NFD\build\vs2010\nfd.vcxproj">
       <Project>{5D94880B-C99D-887C-5219-9F7CBE21947C}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="FinalProject.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Data\Icon\icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />

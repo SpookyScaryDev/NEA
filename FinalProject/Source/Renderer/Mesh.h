@@ -5,7 +5,7 @@
 #include <Renderer/Object.h>
 #include <Renderer/Triangle.h>
 
-namespace Prototype {
+namespace rtos {
 
 class Mesh : Object {
 public:

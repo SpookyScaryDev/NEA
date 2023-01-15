@@ -10,7 +10,7 @@
 
 using json = nlohmann::json;
 
-namespace Prototype {
+namespace rtos {
 
 Sphere::Sphere(Vector3f position, float radius, Material material) :
 	radius(radius),

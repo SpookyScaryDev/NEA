@@ -8,7 +8,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace Prototype {
+namespace rtos {
 
 enum class MaterialType {
     Lambertian,

@@ -2,7 +2,7 @@
 
 struct SDL_Window;
 
-namespace Prototype {
+namespace rtos {
 
 class Window {
 public:

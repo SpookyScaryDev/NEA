@@ -5,7 +5,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace Prototype {
+namespace rtos {
 
 class Camera {
 public:

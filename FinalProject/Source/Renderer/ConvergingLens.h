@@ -4,7 +4,7 @@
 #include <Renderer/Sphere.h>
 #include <Maths/Ray.h>
 
-namespace Prototype {
+namespace rtos {
 
 	class ConvergingLens : Object {
 	public:
