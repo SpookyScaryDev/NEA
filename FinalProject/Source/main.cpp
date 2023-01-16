@@ -980,8 +980,8 @@ public:
             }
             if (material->materialType != MaterialType::Lambertian) {
                 mRedrawThisFrame |= ImGui::DragFloat("Roughness", &material->roughness, 1, 0, 990);
-                if (material->roughness < 1) material->roughness = 1;
-                if (material->roughness < 990) material->roughness = 990;
+                if (material->roughness < 0) material->roughness = 0;
+                if (material->roughness > 990) material->roughness = 990;
             }
         }
         else {
