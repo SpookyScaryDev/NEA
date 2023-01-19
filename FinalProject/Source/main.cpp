@@ -823,6 +823,7 @@ public:
 
             if (obj->GetType() == ObjectType::Sphere) {
                 if (ImGui::DragFloat("Radius", (float*)&scale.x, 0.01, 0.01, 100)) {
+                    if (scale.x < 0.01) scale.x = 0.01;
                     mRedrawThisFrame = true;
                     obj->SetScale(scale);
                 }
@@ -1100,7 +1101,7 @@ public:
                 if (mOutputRenderSettings.samples < 1) mOutputRenderSettings.samples = 1;
                 if (mOutputRenderSettings.samples > 10000) mOutputRenderSettings.samples = 10000;
 
-                ImGui::DragInt("Threads", &mPreviewRenderSettings.numThreads, 1, 1, 30);
+                ImGui::DragInt("Threads", &mOutputRenderSettings.numThreads, 1, 1, 30);
                 if (mOutputRenderSettings.numThreads < 1) mOutputRenderSettings.numThreads = 1;
                 if (mOutputRenderSettings.numThreads > 30) mOutputRenderSettings.numThreads = 30;
 
@@ -1167,7 +1168,7 @@ public:
         ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.65 - 160 + 10);
         ImGui::DragInt("Update Frames", &mRayVisualizationSettings.framesPerUpdate, 1, 1, 10);
         if (mRayVisualizationSettings.framesPerUpdate <= 0) mRayVisualizationSettings.framesPerUpdate = 1;
-        if (mRayVisualizationSettings.framesPerUpdate > 10) mRayVisualizationSettings.shortenedRayLength = 10;
+        if (mRayVisualizationSettings.framesPerUpdate > 10) mRayVisualizationSettings.framesPerUpdate = 10;
 
         ImGui::PopItemWidth();
 
@@ -1180,8 +1181,8 @@ public:
         if (mRayVisualizationSettings.maxBounceDepth > 100) mRayVisualizationSettings.maxBounceDepth = 100;
 
         ImGui::DragFloat("Max distance", &mRayVisualizationSettings.maxDistance, 0.01, 0.01, 1000);
-        if (mRayVisualizationSettings.framesPerUpdate <= 0) mRayVisualizationSettings.framesPerUpdate = 0.01;
-        if (mRayVisualizationSettings.framesPerUpdate > 1000) mRayVisualizationSettings.shortenedRayLength = 1000;
+        if (mRayVisualizationSettings.maxDistance <= 0) mRayVisualizationSettings.maxDistance = 0.01;
+        if (mRayVisualizationSettings.maxDistance > 1000) mRayVisualizationSettings.maxDistance = 1000;
 
         ImGui::Checkbox("Same colour", &mRayVisualizationSettings.sameColour);
         ImGui::SameLine();
