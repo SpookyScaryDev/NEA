@@ -185,7 +185,7 @@ public:
         style.WindowBorderSize = 0;
 
         if (darkMode) {
-            // Created in ImThemes by modifying the Visual Studio theme.
+            // Created in ImThemes by modifying the Visual Studio theme (NOT MY CODE!).
             style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
             style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.5921568870544434f, 0.5921568870544434f, 0.5921568870544434f, 1.0f);
             style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1725211292505264f, 0.172521248459816f, 0.1802574992179871f, 1.0f);
@@ -492,33 +492,33 @@ public:
         Vector2f v2f1 = { 2, 4.3 };
         Vector2f v2f2 = { 0, -3 };
 
-        ImGui::Text(" Adding 2D vectors:                    ");
+        ImGui::Text("- Adding 2D vectors:                    ");
         ImGui::SameLine();
         ImGui::Text((v2f1.ToString() + " + " + v2f2.ToString() + " = " + (v2f1 + v2f2).ToString()).c_str());
 
-        ImGui::Text(" Subtracting 2D vectors:               ");
+        ImGui::Text("- Subtracting 2D vectors:               ");
         ImGui::SameLine();
         ImGui::Text((v2f1.ToString() + " - " + v2f2.ToString() + " = " + (v2f1 - v2f2).ToString()).c_str());
 
-        ImGui::Text(" Multiplying 2D vectors by a scalar:   ");
+        ImGui::Text("- Multiplying 2D vectors by a scalar:   ");
         ImGui::SameLine();
         ImGui::Text(("2 * " + v2f2.ToString() + " = " + (2 * v2f2).ToString()).c_str());
 
-        ImGui::Text(" Dividing 2D vectors by a scalar:      ");
+        ImGui::Text("- Dividing 2D vectors by a scalar:      ");
         ImGui::SameLine();
         ImGui::Text((v2f2.ToString() + " / 2 = " + (v2f2 / 2).ToString()).c_str());
 
-        ImGui::Text(" Dotting 2D vectors:                   ");
+        ImGui::Text("- Dotting 2D vectors:                   ");
         ImGui::SameLine();
         ImGui::Text((v2f1.ToString() + " . " + v2f2.ToString() + " = " + std::to_string(v2f1.Dot(v2f2))).c_str());
 
-        ImGui::Text(" 2D vector magnitude:                  ");
+        ImGui::Text("- 2D vector magnitude:                  ");
         ImGui::SameLine();
         ImGui::Text(("|" + v2f1.ToString() + "|" + " = " + std::to_string(v2f1.Magnitude())).c_str());
 
         Vector2f v2f1Norm = v2f1;
         v2f1Norm.Normalize();
-        ImGui::Text(" 2D vector normalization:              ");
+        ImGui::Text("- 2D vector normalization:              ");
         ImGui::SameLine();
         ImGui::Text(("The unit vector of " + v2f1.ToString() + " is " + v2f1Norm.ToString()).c_str());
 
@@ -530,37 +530,37 @@ public:
         Vector3f v3f1 = { 5.01, 10.2, -0.01 };
         Vector3f v3f2 = { 0, -24, -3.4 };
 
-        ImGui::Text(" Adding 3D vectors:                    ");
+        ImGui::Text("- Adding 3D vectors:                    ");
         ImGui::SameLine();
         ImGui::Text((v3f1.ToString() + " + " + v3f2.ToString() + " = " + (v3f1 + v3f2).ToString()).c_str());
 
-        ImGui::Text(" Subtracting 3D vectors:               ");
+        ImGui::Text("- Subtracting 3D vectors:               ");
         ImGui::SameLine();
         ImGui::Text((v3f1.ToString() + " - " + v3f2.ToString() + " = " + (v3f1 - v3f2).ToString()).c_str());
 
-        ImGui::Text(" Multiplying 3D vectors by a scalar:   ");
+        ImGui::Text("- Multiplying 3D vectors by a scalar:   ");
         ImGui::SameLine();
         ImGui::Text(("2 * " + v3f2.ToString() + " = " + (2 * v3f2).ToString()).c_str());
 
-        ImGui::Text(" Dividing 3D vectors by a scalar:      ");
+        ImGui::Text("- Dividing 3D vectors by a scalar:      ");
         ImGui::SameLine();
         ImGui::Text((v3f2.ToString() + " / 2 = " + (v3f2 / 2).ToString()).c_str());
 
-        ImGui::Text(" Dotting 3D vectors:                   ");
+        ImGui::Text("- Dotting 3D vectors:                   ");
         ImGui::SameLine();
         ImGui::Text((v3f1.ToString() + " . " + v3f2.ToString() + " = " + std::to_string(v3f1.Dot(v3f2))).c_str());
 
-        ImGui::Text(" Crossing 3D vectors:                  ");
+        ImGui::Text("- Crossing 3D vectors:                  ");
         ImGui::SameLine();
         ImGui::Text((v3f1.ToString() + " x " + v3f2.ToString() + " = " + (v3f1.Cross(v3f2)).ToString()).c_str());
 
-        ImGui::Text(" 3D vector magnitude:                  ");
+        ImGui::Text("- 3D vector magnitude:                  ");
         ImGui::SameLine();
         ImGui::Text(("|" + v3f1.ToString() + "|" + " = " + std::to_string(v3f1.Magnitude())).c_str());
 
         Vector3f v3f1Norm = v3f1;
         v3f1Norm.Normalize();
-        ImGui::Text(" 3D vector normalization:              ");
+        ImGui::Text("- 3D vector normalization:              ");
         ImGui::SameLine();
         ImGui::Text(("The unit vector of " + v3f1.ToString() + " is " + v3f1Norm.ToString()).c_str());
 
@@ -575,25 +575,57 @@ public:
         Matrix4x4f identity = Matrix4x4f::Identity();
         Matrix4x4f zero = Matrix4x4f::Zero();
 
-        ImGui::Text(" Zero matrix:                          ");
+        ImGui::Text("- Zero matrix:                          ");
         ImGui::SameLine();
         ImGui::Text((zero.ToString()).c_str());
 
-        ImGui::Text(" Identity matrix:                      ");
+        ImGui::Text("- Identity matrix:                      ");
         ImGui::SameLine();
         ImGui::Text((identity.ToString()).c_str());
 
-        ImGui::Text(" Translation matrix from (3, 1, -5.2): ");
+        ImGui::Text("- Translation matrix from (3, 1, -5.2): ");
         ImGui::SameLine();
         ImGui::Text((translate.ToString()).c_str());
 
-        ImGui::Text(" Rotation matrix from (30, 45, 107.3): ");
+        ImGui::Text("- Rotation matrix from (30, 45, 107.3): ");
         ImGui::SameLine();
         ImGui::Text((rotate.ToString()).c_str());
 
-        ImGui::Text(" Scale matrix from (2, 1.4, -4.2):     ");
+        ImGui::Text("- Scale matrix from (2, 1.4, -4.2):     ");
         ImGui::SameLine();
         ImGui::Text((scale.ToString()).c_str());
+
+        ImGui::Text("- Adding matrices:                      ");
+        ImGui::SameLine();
+        ImGui::Text((translate.ToString() + " + \n" + rotate.ToString() + " = \n" + (translate + rotate).ToString()).c_str());
+        ImGui::NewLine();
+
+        ImGui::Text("- Subtracting matrices:                 ");
+        ImGui::SameLine();
+        ImGui::Text((translate.ToString() + " - \n" + rotate.ToString() + " = \n" + (translate - rotate).ToString()).c_str());
+        ImGui::NewLine();
+
+        ImGui::Text("- Multiplying matrices by a scalar:     ");
+        ImGui::SameLine();
+        ImGui::Text(("2 * " + rotate.ToString() + " = \n" + (2 * rotate).ToString()).c_str());
+        ImGui::NewLine();
+
+        ImGui::Text("- Dividing matrices by a scalar:        ");
+        ImGui::SameLine();
+        ImGui::Text((rotate.ToString() + " / 2 = \n" + (rotate / 2).ToString()).c_str());
+        ImGui::NewLine();
+
+        ImGui::Text("- Matrix by matrix multiplication:      ");
+        ImGui::SameLine();
+        ImGui::Text((translate.ToString() + " * \n" + rotate.ToString() + " = \n" + (translate * rotate).ToString()).c_str());
+        ImGui::NewLine();
+
+        ImGui::Text("- Matrix by vector multiplication:      ");
+        ImGui::SameLine();
+        ImGui::Text((translate.ToString() + " * \n" + v3f1.ToString() + " = \n" + (translate * v3f1).ToString()).c_str());
+        ImGui::NewLine();
+
+
     }
 
     void UIMenuBar() {
@@ -624,12 +656,16 @@ public:
             if (ImGui::BeginMenu("Testing")) {
                 if (ImGui::Button("Begin Tests")) ImGui::OpenPopup("Testing");
                 ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2, ImGui::GetIO().DisplaySize.y / 2), ImGuiCond_Always, ImVec2(0.5, 0.5));
+                ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(1, 1, 1, 1));
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0, 0, 1));
                 if (ImGui::BeginPopup("Testing")) {
                     ImGui::PushFont(mMonoFont);
                     RunTests();
                     ImGui::PopFont();
                     ImGui::EndPopup();
                 }
+                ImGui::PopStyleColor();
+                ImGui::PopStyleColor();
                 ImGui::EndMenu();
             }
 

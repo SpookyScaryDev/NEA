@@ -57,9 +57,6 @@ void Mesh::LoadFromFile(const char* filePath) {
 
 		if (splitLine[0] == "f") {
 			Vector3f faceVerticies[3];
-			int v1 = std::stof(Split(splitLine[1], '/')[0]);
-			int v2 = std::stof(Split(splitLine[2], '/')[0]);
-			int v3 = std::stof(Split(splitLine[3], '/')[0]);
 			faceVerticies[0] = verticies[std::stof(Split(splitLine[1], '/')[0]) - 1];
 			faceVerticies[1] = verticies[std::stof(Split(splitLine[2], '/')[0]) - 1];
 			faceVerticies[2] = verticies[std::stof(Split(splitLine[3], '/')[0]) - 1];
@@ -90,7 +87,6 @@ void Mesh::Update() {
 			object->Update();
 		}
 
-		// TODO: check!!
 		Vector3f nonRotatedTransformedMin = mMin * mScale;
 		Vector3f nonRotatedTransformedMax = mMax * mScale;
 
@@ -98,6 +94,8 @@ void Mesh::Update() {
 		mTransformedMax = Vector3f();
 
 		Matrix4x4f m = Matrix4x4f::Rotate(mRotation);
+
+		// This code copied from Graphics Gems book!
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
 				float a = m[i][j] * nonRotatedTransformedMin[j];
@@ -106,7 +104,7 @@ void Mesh::Update() {
 				mTransformedMax[i] += a < b ? b : a;
 			}
 		}
-		////////
+		// My own code resumes from here.
 
 		mTransformedMin += mPosition;
 		mTransformedMax += mPosition;
@@ -122,7 +120,7 @@ void Mesh::Update() {
 }
 
 bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) {
-	// TODO: check!!
+	// Code copied from slab AABB intersection testing by Tavian Barnes (https://tavianator.com/2011/ray_box.html)
 	float tx1 = (mTransformedMin.x - ray.GetOrigin().x) / ray.GetDirection().x;
 	float tx2 = (mTransformedMax.x - ray.GetOrigin().x) / ray.GetDirection().x;
 
@@ -140,7 +138,7 @@ bool Mesh::Intersect(const Ray& ray, float min, float max, RayPayload& payload) 
 
 	tmin = fmax(tmin, fmin(tz1, tz2));
 	tmax = fmin(tmax, fmax(tz1, tz2));
-	////////
+	// My own code resumes from here.
 
 	if (tmax >= tmin) {
 		RayPayload closestPayload;

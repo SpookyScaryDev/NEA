@@ -16,15 +16,9 @@ namespace Sampling {
     }
 
     Vector3f SampleDirectionInHemisphere(const Vector3f& normal, std::mt19937& rnd) {
+        // Code in this method copied from Ray Tracing Gems: Sampling Transformations Zoo.
+
         Vector2f bilinearDistribution = SampleBilinear(rnd);
-        //float a = 1 - 2 * bilinearDistribution.x;
-        //float b = sqrt(1 - a * a);
-        //float phi = 2 * M_PI * bilinearDistribution.y;
-        //Vector3f direction = Vector3f();
-        //direction.x = normal.x + b * cos(phi);
-        //direction.y = normal.y + b * sin(phi);
-        //direction.z = normal.z + a;
-        //direction.Normalize();
 
         Vector3f direction = Vector3f();
         direction.x = sqrt(bilinearDistribution[0]) * cos(2 * M_PI * bilinearDistribution[1]);
@@ -37,8 +31,9 @@ namespace Sampling {
     }
 
     Vector3f SampleDirectionInPhong(const Vector3f& direction, float s, std::mt19937& rnd) {
+        // Code in this method copied from Ray Tracing Gems: Sampling Transformations Zoo.
+
         Vector3f out = { 0, 0, -1 };
-        //while (out.Dot(Vector3f(0, 0, 1)) < 0) {
         Vector2f bilinearDistribution = SampleBilinear(rnd);
         float cosTheta = pow(1 - bilinearDistribution[0], 1 / (1 + s));
         float sinTheta = sqrt(1 - cosTheta * cosTheta);
@@ -46,7 +41,7 @@ namespace Sampling {
         out.x = cos(phi) * sinTheta;
         out.y = sin(phi) * sinTheta;
         out.z = cosTheta;
-        //}
+
         return TransformSample(out, direction);
     }
 
@@ -73,6 +68,8 @@ namespace Sampling {
         toCenter.Normalize();
         toEdge.Normalize();
         float cosThetaMax = toCenter.Dot(toEdge);
+
+        // Code starting here copied from Ray Tracing Gems: Sampling Transformations Zoo.
 
         Vector2f u = Sampling::SampleBilinear(rnd);
         float cosTheta = (1 - u[0]) + u[0] * cosThetaMax;

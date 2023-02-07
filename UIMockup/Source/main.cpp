@@ -103,7 +103,7 @@ void SetImGuiStyle(bool darkMode) {
     }
 }
 
-// Main code
+// Main code - Whole main function modified from https://github.com/ocornut/imgui/blob/master/examples/example_sdl_sdlrenderer/main.cpp
 int main(int, char**)
 {
     // Setup SDL
